@@ -303,7 +303,7 @@ python BBPeakCaller_TF.py -a 0.05 -m fdr_bh -d 250 -x 5000 \
 
 Once the peak files from my data were generated, I am then able to compare their overlap with existing ER ChIP-Seq data.
 
-First we needed to aquire the data from a previous ChIP-Seq experiment of Andy's. In this experiment there were two types of files - .bed and .narrowPeaks - only the .bed files were relevant and as such they were sorted out from the remaining files.
+First we needed to aquire the data from a previous ChIP-Seq experiment of Andy's available from the GEO under GSE109820. In this experiment there were two types of files - .bed and .narrowPeaks - only the .bed files were relevant and as such they were sorted out from the remaining files.
 
 ```{bash get data, eval=FALSE}
 wget https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE109820&format=fil
@@ -751,4 +751,155 @@ HF5_A90_Incrw_Figure
 
 #Results
 
-#Calling cards with 1000 bp overlap window with ChIP-Seq
+## What is this data
+
+Firstly, the data was provided to us as fastq files, but each replicate appears to have four files. For ER replicate one, two are labelled ER1_EKDL230008858-1A_HF552DSX7* and the other two are ER1_EKDL230008858-1A_HFK3FDSX7*. Each of these has either of these two suffixes L2_1.fq or L2_2.fq. Through looking at the FastQC data, it appeared that L2_2.fq files had a much more varied sequence at the beginning of each read, where as the vast majority of L2_1.fq had the same beginning sequence, that matched with the appropriate barcode for that condition. 
+
+With this info, I determined that the L2_2.fq files were the paired ended read, this can be discarded in bulk CC sequencing and so only the L2_1.fq files were carried forward with the analysis. They were treated as separate files throughout this process as I was unsure why there were two - it has now been pointed out to me, this is likely due to the fact they were run in two different flow cells. As such, they could have been combined. Further analysis will be carried out with these files merged into one. 
+
+I found that the number of overlapping reads was slightly better using peaks from [X]_EKDL230008858-1A_HFK3FDSX7 files than [X]_EKDL230008858-1A_HF552DSX7. As such, I will only be discussing data from [X]_EKDL230008858-1A_HFK3FDSX7_L2_1 files in this markdown.
+
+
+The ChIP-Seq data from GSE109820 contained four replicates, A, B, C and D. Each of these replicates had samples collected at 0, 45 and 90 mintues post-treament with E2 (an ER agonist). The 0 time sample was discarded and the difference between 45 min and 90 min samples were tested by looking at replicate A
+
+##Calling cards with 1000 bp overlap window with one ChIP-Seq replicate - A45 and A90
+```{r ER_A45, echo = false}
+############# LOOK HERE ######################
+#add or delete the '#' symbol below on install packages
+#install.packages("Rtools")
+#install.packages("ggthemes")
+
+#Load software
+library(ggplot2)
+library(ggthemes)
+
+#Set working directory
+
+## SEARCH "C:/<Your Directory>" and replace it with the correct path
+
+#To test
+setwd("C:/Users/JackP/Documents/GitHub/Stenning_data_analysis/Data") 
+#For markdown
+#setwd("C:/<Your Directory>/Stenning_data_analysis/Data") 
+
+#Set column names
+col_names = c("Chromosome", "Position Start", "Position End", "Number of Overlaps with ChIP-Seq Peaks")
+Genocol_names = c("Chromosome", "Position Start", "Position End", 'Name', 'Score', 'Strand',"Number of Overlaps with ChIP-Seq Peaks")
+
+##Read data
+#Variables named <Window '-a'><Window'-b'>
+ESR1_HyPB_A45 = read.table("20231017outputs/1kbp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970403_A45_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+Undir_HyPB_A45 = read.table("20231017outputs/1kbp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970403_A45_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+TTAA_A45 = read.table("20231017outputs/1kbp_A_hg38_TTAA.bed_B_GSM2970403_A45_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
+
+#Counting the total reads
+ESR1_total=nrow(ESR1_HyPB_A45)
+HyPB_total=nrow(Undir_HyPB_A45)
+TTAA_total=nrow(TTAA_A45)
+
+#Count the number of reads with no overlap
+ESR1_overlap = as.numeric(length(which(ESR1_HyPB_A45$Number.of.Overlaps.with.ChIP.Seq.Peaks==0)))
+HyPB_overlap = as.numeric(length(which(Undir_HyPB_A45$Number.of.Overlaps.with.ChIP.Seq.Peaks==0)))
+TTAA_overlap = as.numeric(length(which(TTAA_A45$Number.of.Overlaps.with.ChIP.Seq.Peaks==0)))
+
+#Determine overlap percentage
+Percentage_ESR1 = (1-(ESR1_overlap/ESR1_total))*100
+Percentage_HyPB = (1-(HyPB_overlap/HyPB_total))*100
+Percentage_TTAA = (1-(TTAA_overlap/TTAA_total))*100
+
+#Create table to plot
+A45_Finalpercentage_table = data.frame(Name=c('ESR1-HyPB 1kbp', 'Undirected HyPB 1kbp', 'Genomic TTAA 1kbp'),
+                                       Total=rep(c(ESR1_total, HyPB_total, TTAA_total)),
+                                       Overlap_withChIP= c(ESR1_overlap, HyPB_overlap, TTAA_overlap),
+                                       PercentageOverlapping= c(Percentage_ESR1, Percentage_HyPB, Percentage_TTAA))
+
+#Then we plot
+graphorder= c('ESR1-HyPB 1kbp', 'Undirected HyPB 1kbp', 'Genomic TTAA 1kbp')
+A45_Figure <- ggplot(data = A45_Finalpercentage_table, 
+                     aes(x= factor(Name, graphorder), 
+                         y = PercentageOverlapping,
+                         fill = Name, 
+                         stat("identity"))) +  geom_col(color = "black",
+                                                        show.legend = FALSE) +  ylim(0, 100) + labs(x = "Name and Distance from ChIP-Seq Peak", 
+                                                                                                    y = "% of CC peaks overlapping with ChIP-Seq peak",
+                                                                                                    title = "Calling Cards and ChIP-Seq Overlap",
+                                                                                                    subtitle = "Determining percentage of overlapping peaks from ESR1-HyPB and HyPB \nsample HFK3FDSX7 within 1000 bp of ESR1 ChIP-Seq peaks from \nsample A45") +  theme_dark() + coord_cartesian(expand = FALSE, clip = "off") + geom_hline(yintercept = 83, linetype = "dashed", linewidth = 1) 
+
+
+A45_Figure
+########################################################################
+
+```
+```{r ER_A90, echo = false}
+############# LOOK HERE ######################
+#add or delete the '#' symbol below on install packages
+#install.packages("Rtools")
+#install.packages("ggthemes")
+
+#Load software
+library(ggplot2)
+library(ggthemes)
+
+#Set working directory
+
+## SEARCH "C:/<Your Directory>" and replace it with the correct path
+
+#To test
+setwd("C:/Users/JackP/Documents/GitHub/Stenning_data_analysis/Data") 
+#For markdown
+#setwd("C:/<Your Directory>/Stenning_data_analysis/Data") 
+
+#Set column names
+col_names = c("Chromosome", "Position Start", "Position End", "Number of Overlaps with ChIP-Seq Peaks")
+Genocol_names = c("Chromosome", "Position Start", "Position End", 'Name', 'Score', 'Strand',"Number of Overlaps with ChIP-Seq Peaks")
+
+##Read data
+#Variables named <Window '-a'><Window'-b'>
+ESR1_HyPB_A90 = read.table("20231017outputs/1kbp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+Undir_HyPB_A90 = read.table("20231017outputs/1kbp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+TTAA_A90 = read.table("20231017outputs/1kbp_A_hg38_TTAA.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
+
+#Counting the total reads
+ESR1_total=nrow(ESR1_HyPB_A90)
+HyPB_total=nrow(Undir_HyPB_A90)
+TTAA_total=nrow(TTAA_A90)
+
+#Count the number of reads with no overlap
+ESR1_overlap = as.numeric(length(which(ESR1_HyPB_A90$Number.of.Overlaps.with.ChIP.Seq.Peaks==0)))
+HyPB_overlap = as.numeric(length(which(Undir_HyPB_A90$Number.of.Overlaps.with.ChIP.Seq.Peaks==0)))
+TTAA_overlap = as.numeric(length(which(TTAA_A90$Number.of.Overlaps.with.ChIP.Seq.Peaks==0)))
+
+#Determine overlap percentage
+Percentage_ESR1 = (1-(ESR1_overlap/ESR1_total))*100
+Percentage_HyPB = (1-(HyPB_overlap/HyPB_total))*100
+Percentage_TTAA = (1-(TTAA_overlap/TTAA_total))*100
+
+#Create table to plot
+A90_Finalpercentage_table = data.frame(Name=c('ESR1-HyPB 1kbp', 'Undirected HyPB 1kbp', 'Genomic TTAA 1kbp'),
+                                       Total=rep(c(ESR1_total, HyPB_total, TTAA_total)),
+                                       Overlap_withChIP= c(ESR1_overlap, HyPB_overlap, TTAA_overlap),
+                                       PercentageOverlapping= c(Percentage_ESR1, Percentage_HyPB, Percentage_TTAA))
+
+#Then we plot
+graphorder= c('ESR1-HyPB 1kbp', 'Undirected HyPB 1kbp', 'Genomic TTAA 1kbp')
+A90_Figure <- ggplot(data = A90_Finalpercentage_table, 
+                     aes(x= factor(Name, graphorder), 
+                         y = PercentageOverlapping,
+                         fill = Name, 
+                         stat("identity"))) +  geom_col(color = "black",
+                                                        show.legend = FALSE) +  ylim(0, 100) + labs(x = "Name and Distance from ChIP-Seq Peak", 
+                                                                                                    y = "% of CC peaks overlapping with ChIP-Seq peak",
+                                                                                                    title = "Calling Cards and ChIP-Seq Overlap",
+                                                                                                    subtitle = "Determining percentage of overlapping peaks from ESR1-HyPB and HyPB \nsample HFK3FDSX7 within 1000 bp of ESR1 ChIP-Seq peaks from \nsample A90") +  theme_dark() + coord_cartesian(expand = FALSE, clip = "off") + geom_hline(yintercept = 83, linetype = "dashed", linewidth = 1) 
+
+
+A90_Figure
+########################################################################
+
+
+```
+
+As you can see, there is both very little difference in the number of overlapping reads and very little difference between the overlap in A45 and A90. This was confirmed in the other replicates and as such the 45 minute samples will not be discussed further. 
+
+
+
