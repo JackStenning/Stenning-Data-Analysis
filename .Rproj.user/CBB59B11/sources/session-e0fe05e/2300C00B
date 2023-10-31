@@ -1,0 +1,26 @@
+{
+    "id": "2300C00B",
+    "path": "~/Desktop/Stenning Data Analysis/SP1 and ESR1 bulk calling card analysis.Rmd",
+    "project_path": "SP1 and ESR1 bulk calling card analysis.Rmd",
+    "type": "r_markdown",
+    "hash": "2519486459",
+    "contents": "",
+    "dirty": false,
+    "created": 1698749163186.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "753,20",
+        "scrollLine": "490"
+    },
+    "folds": "32|33|74|0|\n78|39|92|0|\n100|31|111|0|\n115|33|131|0|\n135|34|161|0|\n165|31|174|0|\n178|37|199|0|\n200|31|209|0|\n213|30|239|0|\n245|30|249|0|\n253|35|261|0|\n265|35|273|0|\n277|32|299|0|\n307|30|318|0|\n322|34|330|0|\n334|28|364|0|\n368|39|404|0|\n414|15|438|0|\n442|19|458|0|\n462|16|484|0|\n492|26|562|0|\n566|28|630|0|\n634|22|749|0|\n",
+    "lastKnownWriteTime": 1698753424,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1698753424533,
+    "read_only": false,
+    "read_only_alternatives": []
+}

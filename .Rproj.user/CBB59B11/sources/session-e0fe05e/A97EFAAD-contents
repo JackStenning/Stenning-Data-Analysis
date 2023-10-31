@@ -301,15 +301,69 @@ python BBPeakCaller_TF.py -a 0.05 -m fdr_bh -d 250 -x 5000 \
 
 #Bedtools Window
 
-First we used data from a previous ChIP-Seq experiment of Andy's.
-```{bash get data}
+Once the peak files from my data were generated, I am then able to compare their overlap with existing ER ChIP-Seq data.
+
+First we needed to aquire the data from a previous ChIP-Seq experiment of Andy's. In this experiment there were two types of files - .bed and .narrowPeaks - only the .bed files were relevant and as such they were sorted out from the remaining files.
+
+```{bash get data, eval=FALSE}
 wget https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE109820&format=fil
 tar -xvf GSE109820_RAW.tar
+
+#Separate and backup useful bed files from narrow peaks that were unused. 
+
 mkdir narrow
 mkdir bed
 cp *narrow* narrow/
-cp *bed* bed/
+mv *bed* bed/
+gunzip *.gz
 ```
+
+Everything was then compiled into a single directory before carrying out the window analysis. There are four different ESR1 ChIP-Seq peak files each with three time points - 0, 45 and 90 minutes post E2 treatment. Initially, I looked at using both the 45 and 90 minute files. However, it became apparent that there was not much difference between the two, with the 90 minute files showing consistently higher mapping. As a result, only the 90 minute files were carried forward
+
+```{bash collect data, eval=FALSE}
+mkdir data
+mkdir data/outputs
+
+cp *GSM29704*90_peaks* data/
+cp *peaks.bed data/
+cd data/
+
+```
+
+From here, the bedtools window program was run to generate overlap analysis similar to that carried out on SP1 cards. Given my increased confidence running this pipeline and the large number of files to process, a loop script was written to process the files faster
+
+```{bash Window, eval=FALSE}
+#Analyse ER peaks
+for CC in *r_peaks.bed; do
+	for ChIP in *GSM29704*; do
+		echo $CC
+		echo $ChIP
+		./bedtools window -c -w 1000 -a $CC -b $ChIP > 20231017outputs/1kbp_A_"$CC"_B_"$ChIP"
+		echo "Next!"
+		done
+	done
+#Analyse WT peaks
+for CC in *30_peaks.bed; do
+	for ChIP in *GSM29704*; do
+		echo $CC
+		echo $ChIP
+		./bedtools window -w 1000 -c -a $CC -b $ChIP > 20231017outputs/1kbp_A_"$CC"_B_"$ChIP"
+		echo "Next!"
+		done
+	done
+#Genomic TTAA
+#NOTE - this needed to be re-run as there was not enough disk space for output, 
+cp GenomicTTAA/hg38_TTAA.bed ../Data/
+for TTAA in *TTAA.bed; do
+	for ChIP in *GSM29704*; do
+		echo $TTAA
+		echo $ChIP
+		./bedtools window -w 1000 -c -a $TTAA -b $ChIP > 20231017outputs/1kbp_A_"$TTAA"_B_"$ChIP"
+		echo "Next!"
+		done
+	done
+```
+
 
 
 ## Working in Rstudio

@@ -136,17 +136,17 @@ done
 
 #Genomic TTAA
 #NOT ACTUALLY RUN, I DONT WANT TO FILL MY HARDDRIVE - ONLY RUN FOR WINDOW SIZES USED IN FINAL ANALYSIS
-for CC in *TTAA.bed; do
-	for ChIP in *GSM29704*; do
-		echo $CC
-		echo $ChIP
-		mkdir 20231017outputs/increasingwindow/A_"$CC"_B_"$ChIP"
-		i=250
-		while [ $i -le 100000 ]
-		do
-		echo $i
-    		./bedtools window -c -w $i -a $CC -b $ChIP > 20231017outputs/increasingwindow/A_"$CC"_B_"$ChIP"/"$i"bp_A_"$CC"_B_"$ChIP"
-    i=$(($i+250))
+#for CC in *TTAA.bed; do
+#	for ChIP in *GSM29704*; do
+#		echo $CC
+#		echo $ChIP
+#		mkdir 20231017outputs/increasingwindow/A_"$CC"_B_"$ChIP"
+#		i=250
+#		while [ $i -le 100000 ]
+#		do
+#		echo $i
+#    		./bedtools window -c -w $i -a $CC -b $ChIP > 20231017outputs/increasingwindow/A_"$CC"_B_"$ChIP"/"$i"bp_A_"$CC"_B_"$ChIP"
+#    i=$(($i+250))
 done
 done
 done
@@ -161,34 +161,7 @@ mkdir ESR1
 mv * ESR1/
 
 #Running increasing window with Mitra data
-#Get data NOT USED - JUST COPIED OVER
-cd /mnt/wsl/Viking/Data/Window/
-mkdir Moudgil2020
-cd /mnt/d/D\ drive\ WFH/VikingBackup230914/20230908HCT116_ChIP_Seq_processing/CC
-for direct in *; do
-	cd "$direct"
-	for Hy_PBase in *; do
-		cd "$Hy_PBase"
-		for peaks in *peaks.bed*; do
-			cp $peaks /mnt/wsl/Viking/Data/Window/Moudgil2020/
-			mkdir /mnt/wsl/Viking/Data/Window/Moudgil2020/"$Hy_PBase"_Moudgil_peaks
-			cp -R Moudgil_peaks /mnt/wsl/Viking/Data/Window/Moudgil2020/"$Hy_PBase"_Moudgil_peaks/
-			cd /mnt/d/D\ drive\ WFH/VikingBackup230914/20230908HCT116_ChIP_Seq_processing/CC/"$direct"/"$Hy_PBase"
-			done
-		cd /mnt/d/D\ drive\ WFH/VikingBackup230914/20230908HCT116_ChIP_Seq_processing/CC/"$direct"/
-		done
-	done
-cd /mnt/wsl/Viking/Data/Window/
 
-for file in /mnt/d/D\ drive\ WFH/VikingBackup230914/20230908HCT116_ChIP_Seq_processing/ChIP/SP1/FASTQ/MACS2/*; do
-	cd "$file"
-	for peak in *.narrowpeak; do 
-		cp $peak /mnt/wsl/Viking/Data/Window/Moudgil2020/
-done
-done
-
-	
-##### START AGAIN FROM HERE
 cd /mnt/wsl/Viking/Data/Window/Moudgil2020
 mkdir 20231017outputs
 mkdir 20231017outputs/increasingwindow

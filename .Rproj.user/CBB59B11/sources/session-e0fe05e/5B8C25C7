@@ -1,0 +1,26 @@
+{
+    "id": "5B8C25C7",
+    "path": "~/Desktop/Stenning Data Analysis/scripts/ESR1/ESR1-HyPB HF552DSX7 CC peaks Increasing window 100,000 plot with A90 ChIP-Seq Peaks .R",
+    "project_path": "scripts/ESR1/ESR1-HyPB HF552DSX7 CC peaks Increasing window 100,000 plot with A90 ChIP-Seq Peaks .R",
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1698751760514.0,
+    "source_on_save": false,
+    "relative_order": 2,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "265,20",
+        "scrollLine": "246"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1697811918,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1697811918,
+    "read_only": false,
+    "read_only_alternatives": []
+}
