@@ -1,0 +1,344 @@
+---
+title: "SP1 and ESR1 bulk calling card analysis"
+author: "Jack Stenning"
+date: "2023-10-31"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Background
+
+## Rationale
+
+After running the overlap analysis on SP1 calling cards and SP1 ChIP-Seq, I wanted to try the same analysis on my own ESR1 bulk calling cards and an existing ChIP-Seq data set - GSE109820. The processing of ESR1 calling cards was carried out by following the protocol.io pages:
+
+'Processing Bulk Calling Card Sequencing Data' https://www.protocols.io/view/processing-bulk-calling-card-sequencing-data-n2bvjr25xlk5/v1
+'Calling Peaks on piggyBac Calling Card Data' https://www.protocols.io/view/calling-peaks-on-piggybac-calling-card-data-4r3l289dql1y/v1
+
+This Rmd is executable, please make sure that the accompanying data has extracted and stored into the same directory as this file. 
+
+# Method
+
+## Working on the Univeristy of York Viking HPCC
+
+#Prepare files for peak calling
+
+Firstly, the barcode and index sequence had to be removed from the raw reads ER and WT calling cards. Samples were differentiated by using two different barcodes to denote whether the calling cards were directed by ER through the HyPB-ER fusion protein, or whether they are undirected by the Wild Type HyPB protein. Each replicate carried a unique Nextera index sequence to identify replicates within conditions. 
+
+Given that all of the barcodes are the same for samples within each condition, a loop script was written to trim the barcodes from ER directed and undirected calling cards.
+
+```{bash cut barcode, eval=FALSE}
+module load cutadapt/3.4-GCCcore-10.3.0
+
+
+#First step is to cut off the barcode and surrounding adapter
+#For ER calling cards in this experiment, the barcode is the same - CGT
+
+cd 202306_JS_BulkCC/
+for direct in ER*; do
+cd "$direct"
+	for file in *1.fq; do
+		cutadapt \
+		    -g ^CGTTTTACGCAGACTATCTTTCTAGGGTTAA \
+		    --minimum-length 1 \
+		    --discard-untrimmed \
+		    -e 0 \
+		    --no-indels \
+	 	   -o "$file"TrimmedBC.fq \
+	 	   "$file"
+	done
+	cd /mnt/lustre/groups/biol-hic-2020/jack/workingCCdata/
+done
+cd /mnt/lustre/groups/biol-hic-2020/jack
+
+#For WT calling cards in this experiment, the barcode is the same - TAG
+
+cd workingCCdata/
+for direct in 202306_JS_BulkCC/WT*; do
+cd "$direct"
+	for file in *1.fq; do
+		cutadapt \
+		    -g ^TAGTTTACGCAGACTATCTTTCTAGGGTTAA \
+		    --minimum-length 1 \
+		    --discard-untrimmed \
+		    -e 0 \
+		    --no-indels \
+	 	   -o "$file"TrimmedBC.fq \
+	 	   "$file"
+	done
+	cd /mnt/lustre/groups/biol-hic-2020/jack/workingCCdata/
+done
+cd /mnt/lustre/groups/biol-hic-2020/jack
+```
+
+However, as the index sequence is different for each of the replicates within a condition, trimming of these sequences must be done individually for each replicate. The code below is an example of the processing for a single replicate - ER1, other replicates use the same code, with the file name and index sequence supplemented for the correct versions. 
+
+```{bash cut index EXAMPLE, eval=FALSE}
+module load cutadapt/3.4-GCCcore-10.3.0
+
+cd 202306_JS_BulkCC/ER1
+for file in *TrimmedBC.fq; do
+	cutadapt \
+	-a CTGTCTCTTATACACATCTCCGAGCCCACGAGACTNNNNNNNNNNTCTCGTATGCCGTCTTCTGCTTG \
+	--minimum-length 1 \
+	-o "$file"_fulltrimmed.fastq \
+	"$file"
+done
+cd 202306_JS_BulkCC/
+
+
+```
+
+```{bash cut index REMAINDER, echo=false}
+#ADD THE REST OF THE CODE IN A SEPARATE CODE BUBBLE for running on Viking
+```
+
+Once all of the files have been trimmed, the reads can be aligned to hg38. The code below is an example of the processing for a single replicate - ER1, other replicates use the same code, with the file name supplemented for the correct versions.
+
+```{bash align ER1, eval=FALSE}
+#This can be improved by nesting in another loop that changes the directory
+for file in workingCCdata/202306_JS_BulkCC/ER1/*fulltrimmed.fastq; do
+	module purge
+	module load deepTools/3.5.1-foss-2021b
+	module load BWA/0.7.17-foss-2019b
+	module load SAMtools/1.9-foss-2018b
+	module load BEDTools/2.30.0-GCC-11.2.0
+   	echo "$file"
+	bwa mem -p -t 40 /mnt/lustre/groups/biol-hic-2020/jack/staging/hg38/hg38.fa "$file" > "$file".sam
+	done
+```
+
+After, the reads can be sorted into a .bam file. 
+
+```{bash sort to bam, eval=FALSE}
+for dir in workingCCdata/202306_JS_BulkCC/*; do
+    if [ -d "$dir" ]; then
+        cd "$dir"
+	for file in *fulltrimmed.fastq.sam; do
+		module purge
+		module load SAMtools/1.9-foss-2018b
+	   	echo "$file"
+		samtools view \
+ 	  	 	-bS -h -F 260 \
+ 	  		 "$file" | \
+ 	   		samtools sort - -o "$file"_mapped.bam
+		done
+        cd /mnt/lustre/groups/biol-hic-2020/jack/
+    fi
+done
+```
+
+After this step, the TagBam.py script from Arnhav Moudgil's GitHub - https://github.com/arnavm/calling_cards -is run. Similarly to the adaptor trimming step, given that all of the barcodes are the same for samples within each condition, a loop script was written to trim the barcodes from ER directed and undirected calling cards. However, as the index sequence is different for each of the replicates within a condition, trimming of these sequences must be done individually for each replicate.
+
+```{bash tag barcodes, eval=FALSE}
+module load SAMtools/1.9-foss-2018b
+module load BEDTools/2.30.0-GCC-11.2.0
+module load lang/Miniconda3
+source activate Callingcardspy
+#Tag barcodes
+for direct in workingCCdata/202306_JS_BulkCC/ER*; do
+cd "$direct"
+	for file in *mapped.bam; do
+		python ../../../TagBam.py \
+ 		   --tag XP:Z:CGT \
+ 		   "$file" \
+ 		   "$file"_tagged.bam	
+	done
+	cd /mnt/lustre/groups/biol-hic-2020/jack/
+done
+for direct in workingCCdata/202306_JS_BulkCC/WT*; do
+cd "$direct"
+	for file in *mapped.bam; do
+		python ../../../TagBam.py \
+ 		   --tag XP:Z:TAG \
+ 		   "$file" \
+ 		   "$file"_tagged.bam	
+	done
+	cd /mnt/lustre/groups/biol-hic-2020/jack/
+done
+```
+
+Below is an example of one of the TagBam.py index scripts run. The code below is an example of the processing for a single replicate - ER2, other replicates use the same code, with the file name and index sequence supplemented for the correct versions. 
+
+```{bash tag index, eval=FALSE}
+cd workingCCdata/202306_JS_BulkCC/ER2
+for file in *_tagged.bam; do
+	python ../../../TagBam.py \
+	   --tag XJ:Z:GGAGCTAC \
+	   "$file" \
+	   "$file"_tagged2.bam	
+done
+cd /mnt/lustre/groups/biol-hic-2020/jack/
+```
+
+Once all of the replicates have had their index tag added, the insertion sites can be annotated using the AnnotateInsertionSites.py script. After the .bam files can be indexed
+
+```{bash annotate insert, eval=FALSE}
+module load SAMtools/1.9-foss-2018b
+module load BEDTools/2.30.0-GCC-11.2.0
+module load lang/Miniconda3
+source activate Callingcardspy
+
+for dir in workingCCdata/202306_JS_BulkCC/*; do
+	cd "$dir"
+	for file in *tagged2.bam; do
+		python ../../../AnnotateInsertionSites.py \
+		    --transposase PB \
+		    -f \
+		    "$file" \
+		    /mnt/lustre/groups/biol-hic-2020/jack/staging/hg38/hg38.2bit \
+ 		   "$file"_final.bam
+		done
+	for mile in *mapped.bam_tagged.bam_tagged2.bam_final.bam; do
+            mv "$mile" "${mile%%mapped.bam_tagged.bam_tagged2.bam_final.bam}final.bam"
+        done
+	cd  /mnt/lustre/groups/biol-hic-2020/jack
+done
+```
+```{bash index bam, eval=FALSE}
+for dir in workingCCdata/202306_JS_BulkCC/*; do
+	cd "$dir"
+	for file in *final.bam; do
+		module load SAMtools/1.9-foss-2018b
+		samtools index "$file"
+		done
+	cd  /mnt/lustre/groups/biol-hic-2020/jack
+done
+```
+
+Finally, the files can be cleaned up and concatenated into a single file for easier use down the pipleline. 
+
+```{bash clean up, eval=FALSE}
+module load SAMtools/1.9-foss-2018b
+module load BEDTools/2.30.0-GCC-11.2.0
+module load lang/Miniconda3
+source activate Callingcardspy
+for dir in workingCCdata/202306_JS_BulkCC/ER*; do
+	cd "$dir"
+	for file in *final.bam; do
+		python ../../../BamToCallingCard.py \
+		    -b XP XJ \
+		    -i "$file" \
+		    > "$file".qbed
+		done
+	for mile in *final.bam.qbed; do
+            mv "$mile" "${mile%%final.bam.qbed}.qbed"
+        done
+	cd  /mnt/lustre/groups/biol-hic-2020/jack
+done
+
+module load BEDTools/2.30.0-GCC-11.2.0
+cat ER*HF552DSX7_L2_1_.qbed | bedtools sort -i > ER_HyPB_HF552DSX7_L2_1.qbed
+cat ER*HFK3FDSX7_L2_1_.qbed | bedtools sort -i > ER_HyPB_HFK3FDSX7_L2_1.qbed
+cat WT*HF552DSX7_L2_1_.qbed | bedtools sort -i > WT_HyPB_HF552DSX7_L2_1.qbed
+cat WT*HFK3FDSX7_L2_1_.qbed | bedtools sort -i > WT_HyPB_HFK3FDSX7_L2_1.qbed
+
+
+```
+
+#Peak calling
+
+Before calling peaks, it's necessary to generate a list of 'TTAA' tetranucleotides throughout hg38. This is used to generate an estimate for the expected uniform insertion rate of calling cards because the HyPB transposase inserts almost exclusively at these sites. This can be done using the kmer program. There is an optional step that can be taken to use only canonical chromosomes.
+
+```{bash get TTAA, eval=FALSE}
+./kmer staging/hg38/hg38.fa TTAA > staging/hg38/hg38_TTAA.bed
+
+grep -v '_' staging/hg38/hg38_TTAA.bed > staging/hg38/hg38_TTAA_canon.bed
+```
+
+the qBED files should then be sorted before processing further.
+
+```{bash get canonical, eval=FALSE}
+
+
+bedtools sort -i ER_HyPB_HF552DSX7_L2_1.qbed > ER_HyPB_HF552DSX7_L2_1_sorted.qbed
+bedtools sort -i ER_HyPB_HFK3FDSX7_L2_1.qbed > ER_HyPB_HFK3FDSX7_L2_1_sorted.qbed
+bedtools sort -i WT_HyPB_HF552DSX7_L2_1.qbed > WT_HyPB_HF552DSX7_L2_1_sorted.qbed
+bedtools sort -i WT_HyPB_HFK3FDSX7_L2_1.qbed > WT_HyPB_HFK3FDSX7_L2_1_sorted.qbed
+
+```
+
+Then, the sorted files can be used to generate the blocks file, this segments the reads into regions that contain a uniform insertion rate. This is used by later scripts to determine which insertions are background, and which are genuine re-directed insertions. Below is an example of the script being used on undirected reads. 
+
+```{bash create blocks, eval=FALSE}
+module load bio/SAMtools/1.9-foss-2018b
+module load bio/BEDTools/2.30.0-GCC-11.2.0
+module load lang/Miniconda3
+
+source activate Callingcardspy
+
+python SegmentCCF.py WT_HyPB_HF552DSX7_L2_1_sorted.qbed | sed -e '/^\s*$/d' > WT_HyPB_HF552DSX7_L2_1.blocks
+```
+
+Finally, the files can be used to call peaks, and there are separate scripts used for directed and un-directed calling cards.
+
+```{bash call peaks, eval=FALSE}
+module load bio/SAMtools/1.9-foss-2018b
+module load bio/BEDTools/2.30.0-GCC-11.2.0
+module load lang/Miniconda3
+
+source activate Callingcardspy
+
+#Undirected
+
+python BBPeakCaller_BRD4.py -p 30 -d 12500 -i WT_HyPB_HFK3FDSX7_L2_1_intermediate.csv \
+	WT_HyPB_HFK3FDSX7_L2_1_sorted.qbed \
+	WT_HyPB_HFK3FDSX7_L2_1.blocks \
+	staging/hg38/hg38_TTAA.bed \
+	WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed
+	
+#ESR1 Directed
+python BBPeakCaller_TF.py -a 0.05 -m fdr_bh -d 250 -x 5000 \
+	-i ER_HyPB_HFK3FDSX7_L2_1_intermediate.csv \
+	ER_HyPB_HFK3FDSX7_L2_1_sorted.qbed \
+	ER_HyPB_HFK3FDSX7_L2_1.blocks \
+	WT_HyPB_HFK3FDSX7_L2_1.qbed \
+	ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks.bed
+```
+
+#Bedtools Window
+
+First we used data from a previous ChIP-Seq experiment of Andy's.
+```{bash get data}
+wget https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE109820&format=fil
+tar -xvf GSE109820_RAW.tar
+mkdir narrow
+mkdir bed
+cp *narrow* narrow/
+cp *bed* bed/
+```
+
+
+## Working in Rstudio
+
+This analysis was carried out after analysing the SP1-HyPB calling card data from Moudgil et al., 2020, so the code used was largely taken from there. I started by loading the necessary packages and reading the data into tables.
+
+```{r get data}
+#Load software
+library(ggplot2)
+library(ggthemes)
+
+#Set working directory
+## SEARCH "C:/<Your Directory>" and replace it with the correct path
+
+#To test
+setwd("C:/Users/JackP/Documents/GitHub/Stenning_data_analysis/Data") 
+#For markdown
+#setwd("C:/<Your Directory>/Stenning_data_analysis/Data") 
+
+#Set column names
+col_names = c("Chromosome", "Position Start", "Position End", "Number of Overlaps with ChIP-Seq Peaks")
+Genocol_names = c("Chromosome", "Position Start", "Position End", 'Name', 'Score', 'Strand',"Number of Overlaps with ChIP-Seq Peaks")
+
+##Read data
+#Variables named <Window '-a'><Window'-b'>
+ESR1_HyPB_A90 = read.table("20231017outputs/1kbp_A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+Undir_HyPB_A90 = read.table("20231017outputs/1kbp_A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+TTAA_A90 = read.table("20231017outputs/1kbp_A_hg38_TTAA.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
+
+
+```
+
