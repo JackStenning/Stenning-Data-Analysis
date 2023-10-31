@@ -1,0 +1,366 @@
+############ Script 219 - ER window analysis ############
+
+
+############ Script 215 - Get and install Bed tools ############
+cd /mnt/wsl; mkdir Viking; mkdir Viking/packages; cd /Viking/packages; wget https://github.com/arq5x/bedtools2/releases/download/v2.30.0/bedtools.static.binary ; mv bedtools.static.binary bedtools; chmod a+x bedtools
+
+#And this
+; wget https://github.com/arq5x/bedtools2/releases/download/v2.30.0/bedtools.static.binary
+
+;mv bedtools.static.binary bedtools
+;chmod a+x bedtools
+
+###############################################################
+
+#Get Andy's data
+mkdir /mnt/wsl/Viking/Data
+cd /mnt/wsl/Viking/Data
+
+#THIS doesnt work
+#wget https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE109820&format=file
+
+#using this instead for time
+cp /mnt/d/D\ drive\ WFH/VikingAlternative/20231017ESR1_Analysis/GSE109820_RAW.tar /mnt/wsl/Viking/Data
+tar -xvf GSE109820_RAW.tar
+
+#move narrow peaks
+mkdir narrow
+mkdir bed
+cp *narrow* narrow/
+cp *bed* bed/
+
+#prep data
+gunzip *.gz
+
+
+#Get my data
+cp -R /mnt/d/D\ drive\ WFH/VikingAlternative/20231017ESR1_Analysis/ESR1_processedfiles /mnt/wsl/Viking/Data
+
+#Put together to window
+mkdir /mnt/wsl/Viking/Data/Window
+mkdir /mnt/wsl/Viking/Data/Window/20231017outputs
+
+#Mine
+cd /mnt/wsl/Viking/Data/ESR1_processedfiles
+cp *peaks.bed /mnt/wsl/Viking/Data/Window/
+
+#Andy's
+cd /mnt/wsl/Viking/Data
+cp *peaks.bed /mnt/wsl/Viking/Data/Window/
+
+#Analyse ER peaks
+cp /mnt/wsl/Viking/packages/bedtools /mnt/wsl/Viking/Data/Window/
+cd /mnt/wsl/Viking/Data/Window/
+for CC in *r_peaks.bed; do
+	for ChIP in *GSM29704*; do
+		echo $CC
+		echo $ChIP
+		./bedtools window -c -w 1000 -a $CC -b $ChIP > 20231017outputs/1kbp_A_"$CC"_B_"$ChIP"
+		echo "Next!"
+		done
+	done
+
+#Analyse WT peaks
+for CC in *30_peaks.bed; do
+	for ChIP in *GSM29704*; do
+		echo $CC
+		echo $ChIP
+		./bedtools window -w 1000 -c -a $CC -b $ChIP > 20231017outputs/1kbp_A_"$CC"_B_"$ChIP"
+		echo "Next!"
+		done
+	done
+
+#Genomic TTAA
+cp /mnt/d/D\ drive\ WFH/VikingBackup230914/GenomicTTAA/hg38_TTAA.bed /mnt/wsl/Viking/Data/Window/
+for TTAA in *TTAA.bed; do
+	for ChIP in *GSM29704*; do
+		echo $TTAA
+		echo $ChIP
+		./bedtools window -w 1000 -c -a $TTAA -b $ChIP > 20231017outputs/1kbp_A_"$TTAA"_B_"$ChIP"
+		echo "Next!"
+		done
+	done
+
+#Re-running genomic TTAA on 18/10/23
+for TTAA in *TTAA.bed; do
+	for ChIP in *GSM29704*; do
+		echo $TTAA
+		echo $ChIP
+		./bedtools window -w 1000 -c -a $TTAA -b $ChIP > 20231018windowoutputs/1kbp_A_"$TTAA"_B_"$ChIP"
+		echo "Next!"
+		done
+	done
+
+#Clean out 0 time
+rm *_A0_*
+rm *_B0_*
+rm *_C0_*
+rm *_D0_*
+rm 20231017outputs/*_A0_*
+rm 20231017outputs/*_B0_*
+rm 20231017outputs/*_C0_*
+rm 20231017outputs/*_D0_*
+
+
+#########Making increasing distance plot
+mkdir 20231017outputs/increasingwindow
+#ER
+for CC in *r_peaks.bed; do
+	for ChIP in *GSM29704*; do
+		echo $CC
+		echo $ChIP
+		mkdir 20231017outputs/increasingwindow/A_"$CC"_B_"$ChIP"
+		i=250
+		while [ $i -le 100000 ]
+		do
+		echo $i
+    		./bedtools window -c -w $i -a $CC -b $ChIP > 20231017outputs/increasingwindow/A_"$CC"_B_"$ChIP"/"$i"bp_A_"$CC"_B_"$ChIP"
+    i=$(($i+250))
+done
+
+#Undirected
+for CC in *30_peaks.bed; do
+	for ChIP in *GSM29704*; do
+		echo $CC
+		echo $ChIP
+		mkdir 20231017outputs/increasingwindow/A_"$CC"_B_"$ChIP"
+		i=250
+		while [ $i -le 100000 ]
+		do
+		echo $i
+    		./bedtools window -c -w $i -a $CC -b $ChIP > 20231017outputs/increasingwindow/A_"$CC"_B_"$ChIP"/"$i"bp_A_"$CC"_B_"$ChIP"
+    i=$(($i+250))
+done
+done
+done
+
+#Genomic TTAA
+#NOT ACTUALLY RUN, I DONT WANT TO FILL MY HARDDRIVE - ONLY RUN FOR WINDOW SIZES USED IN FINAL ANALYSIS
+for CC in *TTAA.bed; do
+	for ChIP in *GSM29704*; do
+		echo $CC
+		echo $ChIP
+		mkdir 20231017outputs/increasingwindow/A_"$CC"_B_"$ChIP"
+		i=250
+		while [ $i -le 100000 ]
+		do
+		echo $i
+    		./bedtools window -c -w $i -a $CC -b $ChIP > 20231017outputs/increasingwindow/A_"$CC"_B_"$ChIP"/"$i"bp_A_"$CC"_B_"$ChIP"
+    i=$(($i+250))
+done
+done
+done
+#Cleanup
+rm -R 20231017outputs/increasingwindow/*_A0_*
+rm -R 20231017outputs/increasingwindow/*_B0_*
+rm -R 20231017outputs/increasingwindow/*_C0_*
+rm -R 20231017outputs/increasingwindow/*_D0_*
+##############################################################
+#bundle ER data
+mkdir ESR1
+mv * ESR1/
+
+#Running increasing window with Mitra data
+#Get data NOT USED - JUST COPIED OVER
+cd /mnt/wsl/Viking/Data/Window/
+mkdir Moudgil2020
+cd /mnt/d/D\ drive\ WFH/VikingBackup230914/20230908HCT116_ChIP_Seq_processing/CC
+for direct in *; do
+	cd "$direct"
+	for Hy_PBase in *; do
+		cd "$Hy_PBase"
+		for peaks in *peaks.bed*; do
+			cp $peaks /mnt/wsl/Viking/Data/Window/Moudgil2020/
+			mkdir /mnt/wsl/Viking/Data/Window/Moudgil2020/"$Hy_PBase"_Moudgil_peaks
+			cp -R Moudgil_peaks /mnt/wsl/Viking/Data/Window/Moudgil2020/"$Hy_PBase"_Moudgil_peaks/
+			cd /mnt/d/D\ drive\ WFH/VikingBackup230914/20230908HCT116_ChIP_Seq_processing/CC/"$direct"/"$Hy_PBase"
+			done
+		cd /mnt/d/D\ drive\ WFH/VikingBackup230914/20230908HCT116_ChIP_Seq_processing/CC/"$direct"/
+		done
+	done
+cd /mnt/wsl/Viking/Data/Window/
+
+for file in /mnt/d/D\ drive\ WFH/VikingBackup230914/20230908HCT116_ChIP_Seq_processing/ChIP/SP1/FASTQ/MACS2/*; do
+	cd "$file"
+	for peak in *.narrowpeak; do 
+		cp $peak /mnt/wsl/Viking/Data/Window/Moudgil2020/
+done
+done
+
+	
+##### START AGAIN FROM HERE
+cd /mnt/wsl/Viking/Data/Window/Moudgil2020
+mkdir 20231017outputs
+mkdir 20231017outputs/increasingwindow
+cp ../ESR1/bedtools /mnt/wsl/Viking/Data/Window/Moudgil2020
+#SP1
+for CC in *5_peaks.bed; do
+	for ChIP in *SP1_ChIP*; do
+		echo $CC
+		echo $ChIP
+		mkdir 20231017outputs/increasingwindow/A_"$CC"_B_"$ChIP"
+		i=250
+		while [ $i -le 100000 ]
+		do
+		echo $i
+    		./bedtools window -c -w $i -a $CC -b $ChIP > 20231017outputs/increasingwindow/A_"$CC"_B_"$ChIP"/"$i"bp_A_"$CC"_B_"$ChIP"
+    i=$(($i+250))
+done
+done
+done
+
+#Undirected
+for CC in *9_peaks.bed; do
+	for ChIP in *SP1_ChIP*; do
+		echo $CC
+		echo $ChIP
+		mkdir 20231017outputs/increasingwindow/A_"$CC"_B_"$ChIP"
+		i=250
+		while [ $i -le 100000 ]
+		do
+		echo $i
+    		./bedtools window -c -w $i -a $CC -b $ChIP > 20231017outputs/increasingwindow/A_"$CC"_B_"$ChIP"/"$i"bp_A_"$CC"_B_"$ChIP"
+    i=$(($i+250))
+done
+done
+done
+
+#Genomic TTAA
+#NOT ACTUALLY RUN, I DONT WANT TO FILL MY HARDDRIVE - ONLY RUN FOR WINDOW SIZES USED IN FINAL ANALYSIS
+for CC in *TTAA.bed; do
+	for ChIP in *SP1_ChIP*; do
+		echo $CC
+		echo $ChIP
+		mkdir 20231017outputs/increasingwindow/A_"$CC"_B_"$ChIP"
+		i=250
+		while [ $i -le 100000 ]
+		do
+		echo $i
+    		./bedtools window -c -w $i -a $CC -b $ChIP > 20231017outputs/increasingwindow/A_"$CC"_B_"$ChIP"/"$i"bp_A_"$CC"_B_"$ChIP"
+    i=$(($i+250))
+done
+done
+done
+cp /mnt/d/D\ drive\ WFH/VikingBackup230914/GenomicTTAA/hg38_TTAA.bed /mnt/wsl/Viking/Data/Window/Moudgil2020/
+
+
+#Moudgil peaks
+cp *SP1_ChIP* HyPB_Moudgil_peaks
+cp *SP1_ChIP* PBase_Moudgil_peaks
+cp bedtools HyPB_Moudgil_peaks
+cp bedtools PBase_Moudgil_peaks
+
+#copy to save backups
+cp HyPB_Moudgil_peaks/Moudgil_peaks/*peaks* HyPB_Moudgil_peaks/
+cp PBase_Moudgil_peaks/Moudgil_peaks/*peaks* PBase_Moudgil_peaks/
+
+#prep files
+
+for dir in *Moudgil_peaks; do
+	cd "$dir"
+	for file in *peaks.tsv; do
+		awk '{print $1, $2, $3, $4}' "$file" > "$file"toedit.tsv
+		sed -i '1d' "$file"toedit.tsv
+		sed -e 's/ /\t/g' "$file"toedit.tsv > ../MitraPeak_"$file".bed
+		done
+	cd /mnt/wsl/Viking/Data/Window/Moudgil2020
+	done
+
+#Re-prep files on 2023/10/18
+cd ../
+for file in *peaks.tsv; do
+	awk '{print $1, $2, $3, $4}' "$file" > "$file"toedit.tsv
+	sed -i '1d' "$file"toedit.tsv
+	sed -e 's/ /\t/g' "$file"toedit.tsv > ../MitraPeak_"$file".bed
+	done
+cd ../
+cp *.bed packages/
+cd /mnt/wsl/Viking/packages	
+	
+#Run increasing window
+for CC in MitraPeak_*; do
+	for ChIP in SP1_ChIP*; do
+		echo $CC
+		echo $ChIP
+		mkdir 20231018windowoutputs/Mitra/A_"$CC"_B_"$ChIP"
+		i=250
+		while [ $i -le 100000 ]
+		do
+		echo $i
+    		./bedtools window -c -w $i -a $CC -b $ChIP > 20231018windowoutputs/Mitra/A_"$CC"_B_"$ChIP"/"$i"bp_A_"$CC"_B_"$ChIP"
+    i=$(($i+250))
+done
+done
+done
+
+
+# Re running Mitra peaks 23/10/23
+
+cd /mnt/wsl; mkdir Viking; mkdir Viking/packages; cd /Viking/packages; wget https://github.com/arq5x/bedtools2/releases/download/v2.30.0/bedtools.static.binary ; mv bedtools.static.binary bedtools; chmod a+x bedtools
+
+cp HyPB_Moudgil_peaks/*ase_peaks.tsv /mnt/wsl/
+cp HyPB_Moudgil_peaks/*narrow* /mnt/wsl/
+
+for file in *peaks.tsv; do
+		awk '{print $1, $2, $3, $4}' "$file" > "$file"toedit.tsv
+		sed -i '1d' "$file"toedit.tsv
+		sed -e 's/ /\t/g' "$file"toedit.tsv > ../MitraPeak_"$file".bed
+		done
+	cd /mnt/wsl/Viking/Data/Window/Moudgil2020
+	done
+
+mkdir encode
+mv *ENCODE* encode/
+for CC in MitraPeak_*; do
+	for ChIP in SP1_ChIP*; do
+		echo $CC
+		echo $ChIP
+		mkdir increasingwindow
+		mkdir increasingwindow/A_"$CC"_B_Mitra
+		i=10000
+		while [ $i -le 100000 ]
+		do
+		echo $i
+    		./bedtools window -c -w $i -a $CC -b $ChIP > increasingwindow/A_"$CC"_B_Mitra/"$i"bp_A_"$CC"_B_Mitra
+    i=$(($i+10000))
+done
+done
+done
+for CC in MitraPeak_*; do
+	for ChIP in SP1_ChIP*; do
+		echo $CC
+		echo $ChIP
+    		./bedtools window -c -w 1000 -a $CC -b $ChIP > increasingwindow/A_"$CC"_B_Mitra/1000bp_A_"$CC"_B_Mitra
+    		./bedtools window -c -w 5000 -a $CC -b $ChIP > increasingwindow/A_"$CC"_B_Mitra/5000bp_A_"$CC"_B_"$ChIP"
+done
+
+cp mitra/* /mnt/wsl/
+
+mkdir mitra; mv *Mitra* mitra/
+cp encode/SP1_ChIP_ENCODE_controlinput_peaks.narrowPeak /mnt/wsl/
+
+for CC in MitraPeak_*; do
+	for ChIP in SP1_ChIP*; do
+		echo $CC
+		echo $ChIP
+		mkdir increasingwindow
+		mkdir increasingwindow/A_"$CC"_B_ENCODE
+		i=10000
+		while [ $i -le 100000 ]
+		do
+		echo $i
+    		./bedtools window -c -w $i -a $CC -b $ChIP > increasingwindow/A_"$CC"_B_ENCODE/"$i"bp_A_"$CC"_B_ENCODE
+    i=$(($i+10000))
+done
+done
+done
+
+for CC in MitraPeak_*; do
+	for ChIP in SP1_ChIP*; do
+		echo $CC
+		echo $ChIP
+    		./bedtools window -c -w 1000 -a $CC -b $ChIP > increasingwindow/A_"$CC"_B_ENCODE/1000bp_A_"$CC"_B_ENCODE
+    		./bedtools window -c -w 5000 -a $CC -b $ChIP > increasingwindow/A_"$CC"_B_ENCODE/5000bp_A_"$CC"_B_ENCODE
+done
+done
+done
