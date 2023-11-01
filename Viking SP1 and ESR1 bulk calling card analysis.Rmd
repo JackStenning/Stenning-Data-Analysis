@@ -30,7 +30,8 @@ Firstly, the barcode and index sequence had to be removed from the raw reads ER 
 
 Given that all of the barcodes are the same for samples within each condition, a loop script was written to trim the barcodes from ER directed and undirected calling cards.
 
-```{bash cut barcode, eval=FALSE}
+```{bash cut barcode}
+#Load modules
 module load cutadapt/3.4-GCCcore-10.3.0
 
 
@@ -50,14 +51,14 @@ cd "$direct"
 	 	   -o "$file"TrimmedBC.fq \
 	 	   "$file"
 	done
-	cd /mnt/lustre/groups/biol-hic-2020/jack/workingCCdata/
+	cd ../202306_JS_BulkCC/
 done
-cd /mnt/lustre/groups/biol-hic-2020/jack
+cd ../
 
 #For WT calling cards in this experiment, the barcode is the same - TAG
 
-cd workingCCdata/
-for direct in 202306_JS_BulkCC/WT*; do
+cd 202306_JS_BulkCC/
+for direct in WT*; do
 cd "$direct"
 	for file in *1.fq; do
 		cutadapt \
@@ -69,157 +70,295 @@ cd "$direct"
 	 	   -o "$file"TrimmedBC.fq \
 	 	   "$file"
 	done
-	cd /mnt/lustre/groups/biol-hic-2020/jack/workingCCdata/
+	cd ../202306_JS_BulkCC/
 done
-cd /mnt/lustre/groups/biol-hic-2020/jack
+cd ../
 ```
 
-However, as the index sequence is different for each of the replicates within a condition, trimming of these sequences must be done individually for each replicate. The code below is an example of the processing for a single replicate - ER1, other replicates use the same code, with the file name and index sequence supplemented for the correct versions. 
+However, although the index sequence is different for each of the replicates within a condition, trimming of these sequences can be carried out in one script by replacing the index sequence with 'NNNNNNNNNN' as cut adapt can handle degenerate sequence within adaptors. The code below is an example of the processing for a single replicate - ER1, other replicates use the same code, with the file name and index sequence supplemented for the correct versions. 
 
-```{bash cut index EXAMPLE, eval=FALSE}
+```{bash cut index}
+#Load modules
 module load cutadapt/3.4-GCCcore-10.3.0
 
-cd 202306_JS_BulkCC/ER1
-for file in *TrimmedBC.fq; do
-	cutadapt \
-	-a CTGTCTCTTATACACATCTCCGAGCCCACGAGACTNNNNNNNNNNTCTCGTATGCCGTCTTCTGCTTG \
-	--minimum-length 1 \
-	-o "$file"_fulltrimmed.fastq \
-	"$file"
-done
+#Cut adapt will take degenerate sequence for indexes - NNNNNNNNNN
 cd 202306_JS_BulkCC/
-
-
+for dir in *; do
+  cd "$dir"
+  echo "Now in "$dir""
+  for file in *TrimmedBC.fq; do
+  	cutadapt \
+  	-a CTGTCTCTTATACACATCTCCGAGCCCACGAGACTNNNNNNNNNNTCTCGTATGCCGTCTTCTGCTTG \
+  	--minimum-length 1 \
+  	-o "$file"_fulltrimmed.fastq \
+  	"$file"
+  done
+  cd ../
+done
+cd ../
 ```
 
-```{bash cut index REMAINDER, echo=false}
-#ADD THE REST OF THE CODE IN A SEPARATE CODE BUBBLE for running on Viking
-```
+Once all of the files have been trimmed, the reads can be aligned to hg38. Contrary to the protocol.io, BWA MEM was used as novoalign was not available on the Viking HPCC. The code below is an example of the processing for a single replicate - ER1, other replicates use the same code, with the file name supplemented for the correct versions.
 
-Once all of the files have been trimmed, the reads can be aligned to hg38. The code below is an example of the processing for a single replicate - ER1, other replicates use the same code, with the file name supplemented for the correct versions.
+```{bash align}
+#purge then load modules
+module purge
+module load deepTools/3.5.1-foss-2021b
+module load BWA/0.7.17-foss-2019b
+module load SAMtools/1.9-foss-2018b
+module load BEDTools/2.30.0-GCC-11.2.0
 
-```{bash align ER1, eval=FALSE}
 #This can be improved by nesting in another loop that changes the directory
-for file in workingCCdata/202306_JS_BulkCC/ER1/*fulltrimmed.fastq; do
-	module purge
-	module load deepTools/3.5.1-foss-2021b
-	module load BWA/0.7.17-foss-2019b
-	module load SAMtools/1.9-foss-2018b
-	module load BEDTools/2.30.0-GCC-11.2.0
-   	echo "$file"
-	bwa mem -p -t 40 /mnt/lustre/groups/biol-hic-2020/jack/staging/hg38/hg38.fa "$file" > "$file".sam
-	done
+cd 202306_JS_BulkCC/
+for dir in ER*; do
+  cd "$dir"
+  echo "Now in "$dir""
+  for file in *fulltrimmed.fastq; do
+   	echo "Processing "$file""
+	  bwa mem -p -t 40 /users/jps558/scratch/Stenning_Data_Analysis/staging/hg38/hg38.fa "$file" > "$file".sam
+	  done
+	  cd ../
+done
+cd ../
+	  
+	  
 ```
 
 After, the reads can be sorted into a .bam file. 
 
-```{bash sort to bam, eval=FALSE}
-for dir in workingCCdata/202306_JS_BulkCC/*; do
-    if [ -d "$dir" ]; then
-        cd "$dir"
-	for file in *fulltrimmed.fastq.sam; do
+```{bash sort to bam}
+#Purge then load modules
 		module purge
 		module load SAMtools/1.9-foss-2018b
-	   	echo "$file"
+		
+#Sorting to bam
+cd 202306_JS_BulkCC/
+for dir in *; do
+  cd "$dir"
+  echo "now in "$dir""
+	for file in *fulltrimmed.fastq.sam; do
+	  echo "$file"
 		samtools view \
  	  	 	-bS -h -F 260 \
  	  		 "$file" | \
  	   		samtools sort - -o "$file"_mapped.bam
 		done
-        cd /mnt/lustre/groups/biol-hic-2020/jack/
-    fi
+    cd ../
 done
+cd ../
 ```
 
 After this step, the TagBam.py script from Arnhav Moudgil's GitHub - https://github.com/arnavm/calling_cards -is run. Similarly to the adaptor trimming step, given that all of the barcodes are the same for samples within each condition, a loop script was written to trim the barcodes from ER directed and undirected calling cards. However, as the index sequence is different for each of the replicates within a condition, trimming of these sequences must be done individually for each replicate.
 
-```{bash tag barcodes, eval=FALSE}
+```{bash tag barcodes}
+#Purge then load modules
+module purge
 module load SAMtools/1.9-foss-2018b
 module load BEDTools/2.30.0-GCC-11.2.0
+
+#Activate python environment
 module load lang/Miniconda3
 source activate Callingcardspy
+
+
 #Tag barcodes
-for direct in workingCCdata/202306_JS_BulkCC/ER*; do
+cd 202306_JS_BulkCC/
+for direct in ER*; do
 cd "$direct"
 	for file in *mapped.bam; do
-		python ../../../TagBam.py \
+		python ../../TagBam.py \
  		   --tag XP:Z:CGT \
  		   "$file" \
  		   "$file"_tagged.bam	
 	done
-	cd /mnt/lustre/groups/biol-hic-2020/jack/
+	cd ../
 done
-for direct in workingCCdata/202306_JS_BulkCC/WT*; do
+for WT*; do
 cd "$direct"
 	for file in *mapped.bam; do
-		python ../../../TagBam.py \
+		python ../../TagBam.py \
  		   --tag XP:Z:TAG \
  		   "$file" \
  		   "$file"_tagged.bam	
 	done
-	cd /mnt/lustre/groups/biol-hic-2020/jack/
+	cd ../
 done
+cd ../
 ```
 
 Below is an example of one of the TagBam.py index scripts run. The code below is an example of the processing for a single replicate - ER2, other replicates use the same code, with the file name and index sequence supplemented for the correct versions. 
 
-```{bash tag index, eval=FALSE}
-cd workingCCdata/202306_JS_BulkCC/ER2
+```{bash tag index}
+cd 202306_JS_BulkCC/
+#ER1
+cd ER1/
+for file in *_tagged.bam; do
+	python ../../../TagBam.py \
+	   --tag XJ:Z:ACTCGCTA \
+	   "$file" \
+	   "$file"_tagged2.bam	
+done
+cd ../
+```
+```{bash tag index remainder, echo=FALSE}
+#ER2
+cd ER2/
 for file in *_tagged.bam; do
 	python ../../../TagBam.py \
 	   --tag XJ:Z:GGAGCTAC \
 	   "$file" \
 	   "$file"_tagged2.bam	
 done
-cd /mnt/lustre/groups/biol-hic-2020/jack/
+cd ../
+#ER3
+cd ER3/
+for file in *_tagged.bam; do
+	python ../../../TagBam.py \
+	   --tag XJ:Z:GCGTAGTA \
+	   "$file" \
+	   "$file"_tagged2.bam	
+done
+cd ../
+#ER5
+cd ER3/
+for file in *_tagged.bam; do
+	python ../../../TagBam.py \
+	   --tag XJ:Z:CGGAGCCT \
+	   "$file" \
+	   "$file"_tagged2.bam	
+done
+cd ../
+#ER6
+cd ER3/
+for file in *_tagged.bam; do
+	python ../../../TagBam.py \
+	   --tag XJ:Z:TACGCTGC \
+	   "$file" \
+	   "$file"_tagged2.bam	
+done
+cd ../
+################################################################################################
+#WT1
+cd WT1/
+for file in *_tagged.bam; do
+	python ../../../TagBam.py \
+	   --tag XJ:Z:ATGCGCAG \
+	   "$file" \
+	   "$file"_tagged2.bam	
+done
+cd ../
+#WT2
+cd WT2/
+for file in *_tagged.bam; do
+	python ../../../TagBam.py \
+	   --tag XJ:Z:TAGCGCTC \
+	   "$file" \
+	   "$file"_tagged2.bam	
+done
+cd ../
+#WT3
+cd WT3/
+for file in *_tagged.bam; do
+	python ../../../TagBam.py \
+	   --tag XJ:Z:ACTGAGCG \
+	   "$file" \
+	   "$file"_tagged2.bam	
+done
+cd ../
+#WT4
+cd WT4/
+for file in *_tagged.bam; do
+	python ../../../TagBam.py \
+	   --tag XJ:Z:CCTAAGAC \
+	   "$file" \
+	   "$file"_tagged2.bam	
+done
+cd ../
+#WT5
+cd WT5/
+for file in *_tagged.bam; do
+	python ../../../TagBam.py \
+	   --tag XJ:Z:CGATCAGT \
+	   "$file" \
+	   "$file"_tagged2.bam	
+done
+cd ../
+#WT6
+cd WT6/
+for file in *_tagged.bam; do
+	python ../../../TagBam.py \
+	   --tag XJ:Z:TGCAGCTA \
+	   "$file" \
+	   "$file"_tagged2.bam	
+done
+cd ../
 ```
 
 Once all of the replicates have had their index tag added, the insertion sites can be annotated using the AnnotateInsertionSites.py script. After the .bam files can be indexed
 
-```{bash annotate insert, eval=FALSE}
+```{bash annotate insert}
+#Purge then load modules
+module purge
 module load SAMtools/1.9-foss-2018b
 module load BEDTools/2.30.0-GCC-11.2.0
+
+#Prepare python environment
 module load lang/Miniconda3
 source activate Callingcardspy
 
-for dir in workingCCdata/202306_JS_BulkCC/*; do
+cd 202306_JS_BulkCC
+for dir in *; do
 	cd "$dir"
+	echo "$dir"
 	for file in *tagged2.bam; do
-		python ../../../AnnotateInsertionSites.py \
+		python ../../AnnotateInsertionSites.py \
 		    --transposase PB \
 		    -f \
 		    "$file" \
-		    /mnt/lustre/groups/biol-hic-2020/jack/staging/hg38/hg38.2bit \
+		    /users/jps558/scratch/Stenning_Data_Analysis/staging/hg38/hg38.2bit \
  		   "$file"_final.bam
 		done
 	for mile in *mapped.bam_tagged.bam_tagged2.bam_final.bam; do
             mv "$mile" "${mile%%mapped.bam_tagged.bam_tagged2.bam_final.bam}final.bam"
         done
-	cd  /mnt/lustre/groups/biol-hic-2020/jack
+	cd  ../
 done
+cd ../
 ```
-```{bash index bam, eval=FALSE}
-for dir in workingCCdata/202306_JS_BulkCC/*; do
+```{bash index bam}
+module purge
+module load SAMtools/1.9-foss-2018b
+
+cd 202306_JS_BulkCC/
+for dir in *; do
 	cd "$dir"
+	echo "$dir"
 	for file in *final.bam; do
-		module load SAMtools/1.9-foss-2018b
 		samtools index "$file"
 		done
-	cd  /mnt/lustre/groups/biol-hic-2020/jack
+	cd  ../
 done
+cd ../
 ```
 
-Finally, the files can be cleaned up and concatenated into a single file for easier use down the pipleline. 
+Finally, the files can be cleaned up and concatenated into a single file for easier use down the pipeline. 
 
-```{bash clean up, eval=FALSE}
+```{bash clean up}
+module purge
 module load SAMtools/1.9-foss-2018b
 module load BEDTools/2.30.0-GCC-11.2.0
+
 module load lang/Miniconda3
 source activate Callingcardspy
-for dir in workingCCdata/202306_JS_BulkCC/ER*; do
+
+cd 202306_JS_BulkCC/
+mkdir outputs
+mkdir outputs/ER
+mkdir outputs/WT
+for dir in ER*; do
 	cd "$dir"
 	for file in *final.bam; do
-		python ../../../BamToCallingCard.py \
+		python ../../BamToCallingCard.py \
 		    -b XP XJ \
 		    -i "$file" \
 		    > "$file".qbed
@@ -227,10 +366,13 @@ for dir in workingCCdata/202306_JS_BulkCC/ER*; do
 	for mile in *final.bam.qbed; do
             mv "$mile" "${mile%%final.bam.qbed}.qbed"
         done
-	cd  /mnt/lustre/groups/biol-hic-2020/jack
+  for save in *.qbed; do
+    cp .qbed ../outputs/ER
+	cd  ../
 done
+cd ../
 
-module load BEDTools/2.30.0-GCC-11.2.0
+
 cat ER*HF552DSX7_L2_1_.qbed | bedtools sort -i > ER_HyPB_HF552DSX7_L2_1.qbed
 cat ER*HFK3FDSX7_L2_1_.qbed | bedtools sort -i > ER_HyPB_HFK3FDSX7_L2_1.qbed
 cat WT*HF552DSX7_L2_1_.qbed | bedtools sort -i > WT_HyPB_HF552DSX7_L2_1.qbed
@@ -412,12 +554,14 @@ These outputs were then transferred to my local hard drive to process in Rstudio
 
 This analysis was carried out after analysing the SP1-HyPB calling card data from Moudgil et al., 2020, so the code used was largely taken from there. I started by loading the necessary packages and reading the data into tables.
 
-```{r get data}
+```{r get data, eval=FALSE}
+
 #Load software
 library(ggplot2)
 library(ggthemes)
 
 #Set working directory
+
 ## SEARCH "C:/<Your Directory>" and replace it with the correct path
 
 #To test
@@ -431,8 +575,8 @@ Genocol_names = c("Chromosome", "Position Start", "Position End", 'Name', 'Score
 
 ##Read data
 #Variables named <Window '-a'><Window'-b'>
-ESR1_HyPB_A90 = read.table("20231017outputs/1kbp_A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
-Undir_HyPB_A90 = read.table("20231017outputs/1kbp_A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_A90 = read.table("20231017outputs/1kbp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+Undir_HyPB_A90 = read.table("20231017outputs/1kbp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 TTAA_A90 = read.table("20231017outputs/1kbp_A_hg38_TTAA.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
 
 
@@ -440,7 +584,7 @@ TTAA_A90 = read.table("20231017outputs/1kbp_A_hg38_TTAA.bed_B_GSM2970404_A90_pea
 
 Once the data is loaded, the number of peaks are identified and the number of peaks with no overlap are counted. These can then be used to determine the percentage of peaks that don't overlap with ChIP-Seq peaks, which then allows you to derive the percentage of peaks that do overlap.
 
-```{r process data}
+```{r process data, eval=FALSE}
 #Counting the total reads
 ESR1_total=nrow(ESR1_HyPB_A90)
 HyPB_total=nrow(Undir_HyPB_A90)
@@ -460,7 +604,7 @@ Percentage_TTAA = (1-(TTAA_overlap/TTAA_total))*100
 
 Finally, the data can be put into a table and a graph plotted to show the percentage overlap for each of the samples within 1000 bp of ESR1 ChIP-Seq peaks
 
-```{r plot data}
+```{r plot data, eval=FALSE}
 #Create table to plot
 A90_Finalpercentage_table = data.frame(Name=c('ESR1-HyPB 1kbp', 'Undirected HyPB 1kbp', 'Genomic TTAA 1kbp'),
                                        Total=rep(c(ESR1_total, HyPB_total, TTAA_total)),
@@ -490,7 +634,7 @@ This was repeated for each of the calling card peak files
 
 The overall structure of the code to plot the increasing window outputs is the same as the one above, there are just many more input files and downstream variables to handle. First the data is loaded into tables.
 
-```{r get increasing data}
+```{r get increasing data, eval=FALSE}
 #Load software
 library(ggplot2)
 library(ggthemes)
@@ -564,7 +708,7 @@ HyPB_HF5_A90_100000bp = read.table("A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM
 
 Then, the total number of peaks and number of overlapping peaks can be determined, this is then used to calulate the percentage overlap as before.
 
-```{r increasing percentage}
+```{r increasing percentage, eval=FALSE}
 #Get total peaks
 ESR1_HF5_total=nrow(ESR1_HyPB_HF5_A90_1000bp)
 HyPB_HF5_total=nrow(HyPB_HF5_A90_1000bp)
@@ -632,7 +776,7 @@ Percentage_HyPB_HF5_100000bp = (1-(HyPB_HF5_overlap_100000bp/HyPB_HF5_total))*10
 
 Finally, the plot can be made by generating a table and using that to plot the data in ggplot.
 
-```{r plot increasing}
+```{r plot increasing, eval=FALSE}
 #Percetage table
 graphorder= c('E1', 
               'E5',
@@ -767,7 +911,7 @@ The ChIP-Seq data from GSE109820 contained four replicates, A, B, C and D. Each 
 
 
 ### Figure 1
-```{r ER_A45, echo = false}
+```{r ER_A45, echo= FALSE}
 ############# LOOK HERE ######################
 #add or delete the '#' symbol below on install packages
 #install.packages("Rtools")
@@ -838,7 +982,7 @@ A45_Figure
 
 
 ### Figure 2
-```{r ER_A90, echo = false}
+```{r ER_A90, echo= FALSE}
 ############# LOOK HERE ######################
 #add or delete the '#' symbol below on install packages
 #install.packages("Rtools")
@@ -1059,7 +1203,7 @@ C90_Figure
 
 
 ### Figure 5
-```{r ER_D90. echo= FALSE}
+```{r ER_D90, echo= FALSE}
 ############# LOOK HERE ######################
 #add or delete the '#' symbol below on install packages
 #install.packages("Rtools")
@@ -1141,7 +1285,7 @@ ChIP-Seq samples A90 and C90 were used as they represent the samples with the mo
 
 
 ### Figure 6
-```{r ER Increasing window A90}
+```{r ER Increasing window A90, echo= FALSE}
 #Load software
 library(ggplot2)
 library(ggthemes)
@@ -1410,7 +1554,7 @@ HF5_A90_Incrw_Figure
 
 
 ### Figure 7
-```{r ER increasing window C90}
+```{r ER increasing window C90, echo= FALSE}
 #Load software
 library(ggplot2)
 library(ggthemes)

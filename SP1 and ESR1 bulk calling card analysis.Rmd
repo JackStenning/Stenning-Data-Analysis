@@ -92,7 +92,7 @@ cd 202306_JS_BulkCC/
 
 ```
 
-```{bash cut index REMAINDER, echo=false}
+```{bash cut index REMAINDER, echo= FALSE}
 #ADD THE REST OF THE CODE IN A SEPARATE CODE BUBBLE for running on Viking
 ```
 
@@ -412,12 +412,14 @@ These outputs were then transferred to my local hard drive to process in Rstudio
 
 This analysis was carried out after analysing the SP1-HyPB calling card data from Moudgil et al., 2020, so the code used was largely taken from there. I started by loading the necessary packages and reading the data into tables.
 
-```{r get data}
+```{r get data, eval=FALSE}
+
 #Load software
 library(ggplot2)
 library(ggthemes)
 
 #Set working directory
+
 ## SEARCH "C:/<Your Directory>" and replace it with the correct path
 
 #To test
@@ -431,8 +433,8 @@ Genocol_names = c("Chromosome", "Position Start", "Position End", 'Name', 'Score
 
 ##Read data
 #Variables named <Window '-a'><Window'-b'>
-ESR1_HyPB_A90 = read.table("20231017outputs/1kbp_A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
-Undir_HyPB_A90 = read.table("20231017outputs/1kbp_A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_A90 = read.table("20231017outputs/1kbp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+Undir_HyPB_A90 = read.table("20231017outputs/1kbp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 TTAA_A90 = read.table("20231017outputs/1kbp_A_hg38_TTAA.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
 
 
@@ -440,7 +442,7 @@ TTAA_A90 = read.table("20231017outputs/1kbp_A_hg38_TTAA.bed_B_GSM2970404_A90_pea
 
 Once the data is loaded, the number of peaks are identified and the number of peaks with no overlap are counted. These can then be used to determine the percentage of peaks that don't overlap with ChIP-Seq peaks, which then allows you to derive the percentage of peaks that do overlap.
 
-```{r process data}
+```{r process data, eval=FALSE}
 #Counting the total reads
 ESR1_total=nrow(ESR1_HyPB_A90)
 HyPB_total=nrow(Undir_HyPB_A90)
@@ -460,7 +462,7 @@ Percentage_TTAA = (1-(TTAA_overlap/TTAA_total))*100
 
 Finally, the data can be put into a table and a graph plotted to show the percentage overlap for each of the samples within 1000 bp of ESR1 ChIP-Seq peaks
 
-```{r plot data}
+```{r plot data, eval=FALSE}
 #Create table to plot
 A90_Finalpercentage_table = data.frame(Name=c('ESR1-HyPB 1kbp', 'Undirected HyPB 1kbp', 'Genomic TTAA 1kbp'),
                                        Total=rep(c(ESR1_total, HyPB_total, TTAA_total)),
@@ -490,7 +492,7 @@ This was repeated for each of the calling card peak files
 
 The overall structure of the code to plot the increasing window outputs is the same as the one above, there are just many more input files and downstream variables to handle. First the data is loaded into tables.
 
-```{r get increasing data}
+```{r get increasing data, eval=FALSE}
 #Load software
 library(ggplot2)
 library(ggthemes)
@@ -564,7 +566,7 @@ HyPB_HF5_A90_100000bp = read.table("A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM
 
 Then, the total number of peaks and number of overlapping peaks can be determined, this is then used to calulate the percentage overlap as before.
 
-```{r increasing percentage}
+```{r increasing percentage, eval=FALSE}
 #Get total peaks
 ESR1_HF5_total=nrow(ESR1_HyPB_HF5_A90_1000bp)
 HyPB_HF5_total=nrow(HyPB_HF5_A90_1000bp)
@@ -632,7 +634,7 @@ Percentage_HyPB_HF5_100000bp = (1-(HyPB_HF5_overlap_100000bp/HyPB_HF5_total))*10
 
 Finally, the plot can be made by generating a table and using that to plot the data in ggplot.
 
-```{r plot increasing}
+```{r plot increasing, eval=FALSE}
 #Percetage table
 graphorder= c('E1', 
               'E5',
@@ -767,7 +769,7 @@ The ChIP-Seq data from GSE109820 contained four replicates, A, B, C and D. Each 
 
 
 ### Figure 1
-```{r ER_A45, echo = false}
+```{r ER_A45, echo= FALSE}
 ############# LOOK HERE ######################
 #add or delete the '#' symbol below on install packages
 #install.packages("Rtools")
@@ -838,7 +840,7 @@ A45_Figure
 
 
 ### Figure 2
-```{r ER_A90, echo = false}
+```{r ER_A90, echo= FALSE}
 ############# LOOK HERE ######################
 #add or delete the '#' symbol below on install packages
 #install.packages("Rtools")
@@ -1059,7 +1061,7 @@ C90_Figure
 
 
 ### Figure 5
-```{r ER_D90. echo= FALSE}
+```{r ER_D90, echo= FALSE}
 ############# LOOK HERE ######################
 #add or delete the '#' symbol below on install packages
 #install.packages("Rtools")
@@ -1141,7 +1143,7 @@ ChIP-Seq samples A90 and C90 were used as they represent the samples with the mo
 
 
 ### Figure 6
-```{r ER Increasing window A90}
+```{r ER Increasing window A90, echo= FALSE}
 #Load software
 library(ggplot2)
 library(ggthemes)
@@ -1410,7 +1412,7 @@ HF5_A90_Incrw_Figure
 
 
 ### Figure 7
-```{r ER increasing window C90}
+```{r ER increasing window C90, echo= FALSE}
 #Load software
 library(ggplot2)
 library(ggthemes)
