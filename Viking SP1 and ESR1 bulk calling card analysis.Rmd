@@ -114,12 +114,12 @@ module load BEDTools/2.30.0-GCC-11.2.0
 
 #This can be improved by nesting in another loop that changes the directory
 cd 202306_JS_BulkCC/
-for dir in ER*; do
+for dir in *; do
   cd "$dir"
   echo "Now in "$dir""
   for file in *fulltrimmed.fastq; do
    	echo "Processing "$file""
-	  bwa mem -p -t 40 /users/jps558/scratch/Stenning_Data_Analysis/staging/hg38/hg38.fa "$file" > "$file".sam
+	  bwa mem -p -t 40 /mnt/scratch/users/jps558/staging/hg38/hg38.fa "$file" > "$file".sam
 	  done
 	  cd ../
 done
@@ -140,7 +140,7 @@ cd 202306_JS_BulkCC/
 for dir in *; do
   cd "$dir"
   echo "now in "$dir""
-	for file in *fulltrimmed.fastq.sam; do
+	for file in *.sam; do
 	  echo "$file"
 		samtools view \
  	  	 	-bS -h -F 260 \
@@ -154,6 +154,18 @@ cd ../
 
 After this step, the TagBam.py script from Arnhav Moudgil's GitHub - <https://github.com/arnavm/calling_cards> -is run. Similarly to the adaptor trimming step, given that all of the barcodes are the same for samples within each condition, a loop script was written to trim the barcodes from ER directed and undirected calling cards. However, as the index sequence is different for each of the replicates within a condition, trimming of these sequences must be done individually for each replicate.
 
+In order to execute python code on the Viking2 HPCC I first had to set up a virtual environment.
+```{bash set up env}
+### Set up env
+cd 202306_JS_BulkCC/
+python3 -m venv .CallingCardsPy
+source .CallingCardsPy/bin/activate
+python3 -m pip install twobitreader pysam numpy pandas scipy statsmodels pybedtools astropy
+
+
+```
+
+
 ```{bash tag barcodes}
 #Purge then load modules
 module purge
@@ -162,7 +174,13 @@ module load BEDTools/2.30.0-GCC-11.2.0
 
 #Activate python environment
 module load Miniconda3/23.5.2-0
-source activate Callingcardspy
+
+#Activate python environment
+cd 202306_JS_BulkCC/
+command -v python
+source activate CallingCardsPy
+command -v python
+python3 -m pip install twobitreader pysam numpy pandas scipy statsmodels pybedtools astropy
 
 
 #Tag barcodes
@@ -309,7 +327,14 @@ module load BEDTools/2.30.0-GCC-11.2.0
 
 #Prepare python environment
 module load Miniconda3/23.5.2-0
-source activate Callingcardspy
+
+#Activate python environment
+
+cd 202306_JS_BulkCC/ 
+command -v python
+source activate CallingCardsPy
+command -v python
+python3 -m pip install twobitreader pysam numpy pandas scipy statsmodels pybedtools astropy
 
 cd 202306_JS_BulkCC
 for dir in *; do
@@ -320,7 +345,7 @@ for dir in *; do
 		    --transposase PB \
 		    -f \
 		    "$file" \
-		    /users/jps558/scratch/Stenning_Data_Analysis/staging/hg38/hg38.2bit \
+		    /mnt/scratch/users/jps558/staging/hg38/hg38.2bit \
  		   "$file"_final.bam
 		done
 	for mile in *mapped.bam_tagged.bam_tagged2.bam_final.bam; do
@@ -355,7 +380,14 @@ module load SAMtools/1.16.1-GCC-11.3.0
 module load BEDTools/2.30.0-GCC-11.2.0
 
 module load Miniconda3/23.5.2-0
-source activate Callingcardspy
+
+#Activate python environment
+
+cd 202306_JS_BulkCC/
+command -v python
+source activate CallingCardsPy
+command -v python
+python3 -m pip install twobitreader pysam numpy pandas scipy statsmodels pybedtools astropy
 
 cd 202306_JS_BulkCC/
 mkdir outputs
@@ -432,9 +464,9 @@ for dir in 202306_JS_BulkCC/*; do
 	for mile in tagged*.bam; do
 		rm "$mile"
 		done
-	cd ../../
+	cd ../
 	done
-
+cd ../
 
 ```
 
@@ -451,16 +483,43 @@ grep -v '_' ../staging/hg38/hg38_TTAA.bed > ../staging/hg38/hg38_TTAA_canon.bed
 the qBED files should then be sorted before processing further.
 
 ```{bash sort qBED}
+cd 202306_JS_BulkCC/outputs
 #ER
+cd ER
 bedtools sort -i ER_HyPB_HF552DSX7_L2_1.qbed > ER_HyPB_HF552DSX7_L2_1_sorted.qbed
 bedtools sort -i ER_HyPB_HFK3FDSX7_L2_1.qbed > ER_HyPB_HFK3FDSX7_L2_1_sorted.qbed
 bedtools sort -i ER_HyPB_EKDL230008858.qbed > ER_HyPB_EKDL230008858_sorted.qbed
+mkdir notsorted
+mv *1.qbed notsorted/
+mv *8.qbed notsorted/
+cd ../
 #WT
+cd WT
 bedtools sort -i WT_HyPB_HF552DSX7_L2_1.qbed > WT_HyPB_HF552DSX7_L2_1_sorted.qbed
 bedtools sort -i WT_HyPB_HFK3FDSX7_L2_1.qbed > WT_HyPB_HFK3FDSX7_L2_1_sorted.qbed
 bedtools sort -i WT_HyPB_EKDL230008858.qbed > WT_HyPB_EKDL230008858_sorted.qbed
+mkdir notsorted
+mv *1.qbed notsorted/
+mv *8.qbed notsorted/
+cd ../../../
+```
+
+I had previously filtered blacklisted sites from SP1 calling cards before creating block files, I will do the same here but will also process the unfiltered reads alongside.
+
+```{bash filter}
+#Load modules
+module load BEDTools/2.30.0-GCC-11.2.0
+
+cd 202306_JS_BulkCC/outputs
+
+#Filter
+for dir in *; do
+  echo "$dir"
+  for file in *sorted.qbed; do
+    bedtools subtract -a  "$file" -b /mnt/scratch/users/jps558/staging/hg38/Blacklist/hg38-blacklist.v2.bed/hg38-blacklist.v2.bed > "$file"_filtered.qbed
 
 ```
+
 
 Then, the sorted files can be used to generate the blocks file, this segments the reads into regions that contain a uniform insertion rate. This is used by later scripts to determine which insertions are background, and which are genuine re-directed insertions.
 
@@ -470,7 +529,15 @@ module load bio/SAMtools/1.9-foss-2018b
 module load bio/BEDTools/2.30.0-GCC-11.2.0
 module load Miniconda3/23.5.2-0
 
-source activate Callingcardspy
+
+#Activate python environment
+
+cd 202306_JS_BulkCC/
+command -v python
+source activate CallingCardsPy
+command -v python
+python3 -m pip install twobitreader pysam numpy pandas scipy statsmodels pybedtools astropy
+
 cd 202306_JS_BulkCC/outputs/
 for dir in *; do
   cd "$dir"
@@ -490,13 +557,20 @@ module load SAMtools/1.16.1-GCC-11.3.0
 module load BEDTools/2.30.0-GCC-11.2.0
 module load Miniconda3/23.5.2-0
 
-source activate Callingcardspy
+
+#Activate python environment
+
+cd 202306_JS_BulkCC/
+command -v python
+source activate CallingCardsPy
+command -v python
+python3 -m pip install twobitreader pysam numpy pandas scipy statsmodels pybedtools astropy
 
 cd 202306_JS_BulkCC/outputs/WT
 
 #Call WT peaks at p = 1e^-9, -30, -62
 
-for file in *sorted.qbed; do
+for file in *.qbed; do
   echo "$file"
   python ../../../BBPeakCaller_BRD4.py -p 30 -d 12500 \
     -i "$file"_p30_intermediate.csv \
@@ -505,7 +579,7 @@ for file in *sorted.qbed; do
   	../../../../staging/hg38/hg38_TTAA.bed \
   	"$file"_p30_peaks.bed
 done
-for file in *sorted.qbed; do
+for file in *.qbed; do
   echo "$file"
   python ../../../BBPeakCaller_BRD4.py -p 62 -d 12500 \
     -i "$file"_p62_intermediate.csv \
@@ -514,7 +588,7 @@ for file in *sorted.qbed; do
   	../../../../staging/hg38/hg38_TTAA.bed \
   	"$file"_p62_peaks.bed
   	done
-for file in *sorted.qbed; do
+for file in *.qbed; do
   echo "$file"
   python ../../../BBPeakCaller_BRD4.py -p 9 -d 12500 \
     -i "$file"_p9_intermediate.csv \
@@ -527,7 +601,7 @@ for file in *sorted.qbed; do
 #Call ER peaks with and without refining
 
 cd ../ER
-for file in *sorted.qbed; do
+for file in *.qbed; do
   echo "$file"
   python ../../../BBPeakCaller_TF.py -a 0.05 -m fdr_bh -d 250 -x 5000 \
 	  -i "$file"_no_r_intermediate.csv \
@@ -536,7 +610,7 @@ for file in *sorted.qbed; do
 	  ../WT/WT_HyPB_EKDL230008858_sorted.qbed \
   	"$file"_fdr_bh_0.05_peaks_nor.bed
 done
-for file in *sorted.qbed; do
+for file in *.qbed; do
   echo "$file"
   python ../../../BBPeakCaller_TF.py -a 0.05 -r -m fdr_bh -d 250 -x 5000 \
 	  -i "$file"_r_intermediate.csv \
@@ -550,8 +624,8 @@ cd ../
 #Clean up block file ends
 for dir in *; do
   cd "$dir"
-  for file in *_sorted.qbed.blocks; do
-  	mv "$file" "${file%%_sorted.qbed.blocks}.blocks"
+  for file in *.qbed.blocks; do
+  	mv "$file" "${file%%.qbed.blocks}.blocks"
   done
   cd ../
 done
