@@ -15,22 +15,22 @@ knitr::opts_chunk$set(echo = TRUE)
 
 After running the overlap analysis on SP1 calling cards and SP1 ChIP-Seq, I wanted to try the same analysis on my own ESR1 bulk calling cards and an existing ChIP-Seq data set - GSE109820. The processing of ESR1 calling cards was carried out by following the protocol.io pages:
 
-'Processing Bulk Calling Card Sequencing Data' https://www.protocols.io/view/processing-bulk-calling-card-sequencing-data-n2bvjr25xlk5/v1
-'Calling Peaks on piggyBac Calling Card Data' https://www.protocols.io/view/calling-peaks-on-piggybac-calling-card-data-4r3l289dql1y/v1
+'Processing Bulk Calling Card Sequencing Data' <https://www.protocols.io/view/processing-bulk-calling-card-sequencing-data-n2bvjr25xlk5/v1> 'Calling Peaks on piggyBac Calling Card Data' <https://www.protocols.io/view/calling-peaks-on-piggybac-calling-card-data-4r3l289dql1y/v1>
 
-This Rmd is executable, please make sure that the accompanying 'Data' directory has been extracted and stored into the same directory as this file. 
+This Rmd is executable, please make sure that the accompanying 'Data' directory has been extracted and stored into the same directory as this file.
 
 # Method
 
 ## Working on the Univeristy of York Viking HPCC
 
-###Prepare files for peak calling
+### Prepare files for peak calling
 
-Firstly, the barcode and index sequence had to be removed from the raw reads ER and WT calling cards. Samples were differentiated by using two different barcodes to denote whether the calling cards were directed by ER through the HyPB-ER fusion protein, or whether they are undirected by the Wild Type HyPB protein. Each replicate carried a unique Nextera index sequence to identify replicates within conditions. 
+Firstly, the barcode and index sequence had to be removed from the raw reads ER and WT calling cards. Samples were differentiated by using two different barcodes to denote whether the calling cards were directed by ER through the HyPB-ER fusion protein, or whether they are undirected by the Wild Type HyPB protein. Each replicate carried a unique Nextera index sequence to identify replicates within conditions.
 
 Given that all of the barcodes are the same for samples within each condition, a loop script was written to trim the barcodes from ER directed and undirected calling cards.
 
 ```{bash cut barcode}
+### bash cut barcode
 #Load modules
 module load cutadapt/3.4-GCCcore-10.3.0
 
@@ -41,6 +41,7 @@ module load cutadapt/3.4-GCCcore-10.3.0
 cd 202306_JS_BulkCC/
 for direct in ER*; do
 cd "$direct"
+gunzip *.gz
 	for file in *1.fq; do
 		cutadapt \
 		    -g ^CGTTTTACGCAGACTATCTTTCTAGGGTTAA \
@@ -51,7 +52,7 @@ cd "$direct"
 	 	   -o "$file"TrimmedBC.fq \
 	 	   "$file"
 	done
-	cd ../202306_JS_BulkCC/
+	cd ../
 done
 cd ../
 
@@ -60,6 +61,7 @@ cd ../
 cd 202306_JS_BulkCC/
 for direct in WT*; do
 cd "$direct"
+gunzip *.gz
 	for file in *1.fq; do
 		cutadapt \
 		    -g ^TAGTTTACGCAGACTATCTTTCTAGGGTTAA \
@@ -70,12 +72,13 @@ cd "$direct"
 	 	   -o "$file"TrimmedBC.fq \
 	 	   "$file"
 	done
-	cd ../202306_JS_BulkCC/
+	cd ../
 done
 cd ../
+
 ```
 
-However, although the index sequence is different for each of the replicates within a condition, trimming of these sequences can be carried out in one script by replacing the index sequence with 'NNNNNNNNNN' as cut adapt can handle degenerate sequence within adaptors. The code below is an example of the processing for a single replicate - ER1, other replicates use the same code, with the file name and index sequence supplemented for the correct versions. 
+However, although the index sequence is different for each of the replicates within a condition, trimming of these sequences can be carried out in one script by replacing the index sequence with 'NNNNNNNNNN' as cut adapt can handle degenerate sequence within adaptors. The code below is an example of the processing for a single replicate - ER1, other replicates use the same code, with the file name and index sequence supplemented for the correct versions.
 
 ```{bash cut index}
 #Load modules
@@ -96,6 +99,7 @@ for dir in *; do
   cd ../
 done
 cd ../
+
 ```
 
 Once all of the files have been trimmed, the reads can be aligned to hg38. Contrary to the protocol.io, BWA MEM was used as novoalign was not available on the Viking HPCC. The code below is an example of the processing for a single replicate - ER1, other replicates use the same code, with the file name supplemented for the correct versions.
@@ -103,9 +107,9 @@ Once all of the files have been trimmed, the reads can be aligned to hg38. Contr
 ```{bash align}
 #purge then load modules
 module purge
-module load deepTools/3.5.1-foss-2021b
+module load deepTools/3.5.0-foss-2021a
 module load BWA/0.7.17-foss-2019b
-module load SAMtools/1.9-foss-2018b
+module load SAMtools/1.16.1-GCC-11.3.0
 module load BEDTools/2.30.0-GCC-11.2.0
 
 #This can be improved by nesting in another loop that changes the directory
@@ -124,12 +128,12 @@ cd ../
 	  
 ```
 
-After, the reads can be sorted into a .bam file. 
+After, the reads can be sorted into a .bam file.
 
 ```{bash sort to bam}
 #Purge then load modules
 		module purge
-		module load SAMtools/1.9-foss-2018b
+		module load SAMtools/1.16.1-GCC-11.3.0
 		
 #Sorting to bam
 cd 202306_JS_BulkCC/
@@ -148,16 +152,16 @@ done
 cd ../
 ```
 
-After this step, the TagBam.py script from Arnhav Moudgil's GitHub - https://github.com/arnavm/calling_cards -is run. Similarly to the adaptor trimming step, given that all of the barcodes are the same for samples within each condition, a loop script was written to trim the barcodes from ER directed and undirected calling cards. However, as the index sequence is different for each of the replicates within a condition, trimming of these sequences must be done individually for each replicate.
+After this step, the TagBam.py script from Arnhav Moudgil's GitHub - <https://github.com/arnavm/calling_cards> -is run. Similarly to the adaptor trimming step, given that all of the barcodes are the same for samples within each condition, a loop script was written to trim the barcodes from ER directed and undirected calling cards. However, as the index sequence is different for each of the replicates within a condition, trimming of these sequences must be done individually for each replicate.
 
 ```{bash tag barcodes}
 #Purge then load modules
 module purge
-module load SAMtools/1.9-foss-2018b
+module load SAMtools/1.16.1-GCC-11.3.0
 module load BEDTools/2.30.0-GCC-11.2.0
 
 #Activate python environment
-module load lang/Miniconda3
+module load Miniconda3/23.5.2-0
 source activate Callingcardspy
 
 
@@ -186,25 +190,26 @@ done
 cd ../
 ```
 
-Below is an example of one of the TagBam.py index scripts run. The code below is an example of the processing for a single replicate - ER2, other replicates use the same code, with the file name and index sequence supplemented for the correct versions. 
+Below is an example of one of the TagBam.py index scripts run. The code below is an example of the processing for a single replicate - ER2, other replicates use the same code, with the file name and index sequence supplemented for the correct versions.
 
 ```{bash tag index}
 cd 202306_JS_BulkCC/
 #ER1
 cd ER1/
 for file in *_tagged.bam; do
-	python ../../../TagBam.py \
+	python ../../TagBam.py \
 	   --tag XJ:Z:ACTCGCTA \
 	   "$file" \
 	   "$file"_tagged2.bam	
 done
 cd ../
 ```
+
 ```{bash tag index remainder, echo=FALSE}
 #ER2
 cd ER2/
 for file in *_tagged.bam; do
-	python ../../../TagBam.py \
+	python ../../TagBam.py \
 	   --tag XJ:Z:GGAGCTAC \
 	   "$file" \
 	   "$file"_tagged2.bam	
@@ -213,7 +218,7 @@ cd ../
 #ER3
 cd ER3/
 for file in *_tagged.bam; do
-	python ../../../TagBam.py \
+	python ../../TagBam.py \
 	   --tag XJ:Z:GCGTAGTA \
 	   "$file" \
 	   "$file"_tagged2.bam	
@@ -222,7 +227,7 @@ cd ../
 #ER5
 cd ER3/
 for file in *_tagged.bam; do
-	python ../../../TagBam.py \
+	python ../../TagBam.py \
 	   --tag XJ:Z:CGGAGCCT \
 	   "$file" \
 	   "$file"_tagged2.bam	
@@ -231,7 +236,7 @@ cd ../
 #ER6
 cd ER3/
 for file in *_tagged.bam; do
-	python ../../../TagBam.py \
+	python ../../TagBam.py \
 	   --tag XJ:Z:TACGCTGC \
 	   "$file" \
 	   "$file"_tagged2.bam	
@@ -241,7 +246,7 @@ cd ../
 #WT1
 cd WT1/
 for file in *_tagged.bam; do
-	python ../../../TagBam.py \
+	python ../../TagBam.py \
 	   --tag XJ:Z:ATGCGCAG \
 	   "$file" \
 	   "$file"_tagged2.bam	
@@ -250,7 +255,7 @@ cd ../
 #WT2
 cd WT2/
 for file in *_tagged.bam; do
-	python ../../../TagBam.py \
+	python ../../TagBam.py \
 	   --tag XJ:Z:TAGCGCTC \
 	   "$file" \
 	   "$file"_tagged2.bam	
@@ -259,7 +264,7 @@ cd ../
 #WT3
 cd WT3/
 for file in *_tagged.bam; do
-	python ../../../TagBam.py \
+	python ../../TagBam.py \
 	   --tag XJ:Z:ACTGAGCG \
 	   "$file" \
 	   "$file"_tagged2.bam	
@@ -268,7 +273,7 @@ cd ../
 #WT4
 cd WT4/
 for file in *_tagged.bam; do
-	python ../../../TagBam.py \
+	python ../../TagBam.py \
 	   --tag XJ:Z:CCTAAGAC \
 	   "$file" \
 	   "$file"_tagged2.bam	
@@ -277,7 +282,7 @@ cd ../
 #WT5
 cd WT5/
 for file in *_tagged.bam; do
-	python ../../../TagBam.py \
+	python ../../TagBam.py \
 	   --tag XJ:Z:CGATCAGT \
 	   "$file" \
 	   "$file"_tagged2.bam	
@@ -286,7 +291,7 @@ cd ../
 #WT6
 cd WT6/
 for file in *_tagged.bam; do
-	python ../../../TagBam.py \
+	python ../../TagBam.py \
 	   --tag XJ:Z:TGCAGCTA \
 	   "$file" \
 	   "$file"_tagged2.bam	
@@ -299,11 +304,11 @@ Once all of the replicates have had their index tag added, the insertion sites c
 ```{bash annotate insert}
 #Purge then load modules
 module purge
-module load SAMtools/1.9-foss-2018b
+module load SAMtools/1.16.1-GCC-11.3.0
 module load BEDTools/2.30.0-GCC-11.2.0
 
 #Prepare python environment
-module load lang/Miniconda3
+module load Miniconda3/23.5.2-0
 source activate Callingcardspy
 
 cd 202306_JS_BulkCC
@@ -325,9 +330,10 @@ for dir in *; do
 done
 cd ../
 ```
+
 ```{bash index bam}
 module purge
-module load SAMtools/1.9-foss-2018b
+module load SAMtools/1.16.1-GCC-11.3.0
 
 cd 202306_JS_BulkCC/
 for dir in *; do
@@ -341,14 +347,14 @@ done
 cd ../
 ```
 
-Finally, the files can be cleaned up and concatenated into a single file for easier use down the pipeline. 
+Finally, the files can be cleaned up and concatenated into a single file for easier use down the pipeline.
 
-```{bash clean up}
+```{bash convert Bam to CC}
 module purge
-module load SAMtools/1.9-foss-2018b
+module load SAMtools/1.16.1-GCC-11.3.0
 module load BEDTools/2.30.0-GCC-11.2.0
 
-module load lang/Miniconda3
+module load Miniconda3/23.5.2-0
 source activate Callingcardspy
 
 cd 202306_JS_BulkCC/
@@ -367,16 +373,67 @@ for dir in ER*; do
             mv "$mile" "${mile%%final.bam.qbed}.qbed"
         done
   for save in *.qbed; do
-    cp .qbed ../outputs/ER
+    cp *.qbed ../outputs/ER
+    done
+  for store in *final.bam*; do
+    cp "$store" ../outputs/ER
+    done
 	cd  ../
 done
-cd ../
 
+for dir in WT*; do
+	cd "$dir"
+	for file in *final.bam; do
+		python ../../BamToCallingCard.py \
+		    -b XP XJ \
+		    -i "$file" \
+		    > "$file".qbed
+		done
+	for mile in *final.bam.qbed; do
+            mv "$mile" "${mile%%final.bam.qbed}.qbed"
+        done
+  for save in *.qbed; do
+    cp *.qbed ../outputs/ER
+    done
+  for store in *final.bam*; do
+    cp "$store" ../outputs/ER
+    done
+	cd  ../
+done
 
+#Cat ER
+cd outputs/ER
 cat ER*HF552DSX7_L2_1_.qbed | bedtools sort -i > ER_HyPB_HF552DSX7_L2_1.qbed
 cat ER*HFK3FDSX7_L2_1_.qbed | bedtools sort -i > ER_HyPB_HFK3FDSX7_L2_1.qbed
+cat ER*.qbed | bedtools sort -i > ER_HyPB_EKDL230008858.qbed
+samtools merge ER*final.bam ER_HyPB_EKDL230008858_final.bam
+
+#Cat WT
+cd ../outputs/WT
 cat WT*HF552DSX7_L2_1_.qbed | bedtools sort -i > WT_HyPB_HF552DSX7_L2_1.qbed
 cat WT*HFK3FDSX7_L2_1_.qbed | bedtools sort -i > WT_HyPB_HFK3FDSX7_L2_1.qbed
+cat WT*.qbed | bedtools sort -i > WT_HyPB_EKDL230008858.qbed
+samtools merge WT*final.bam WT_HyPB_EKDL230008858_final.bam
+cd ../../../
+
+```
+
+You can also clean up intermediary file types if you dont remove the files you are interested in
+
+```{bash cleanup}
+for dir in 202306_JS_BulkCC/*; do
+	cd "$dir"
+	for file in *Trimmed*; do
+		rm "$file"
+		done
+	for dile in *.sam; do
+		rm "$dile"
+		done
+	for mile in tagged*.bam; do
+		rm "$mile"
+		done
+	cd ../../
+	done
 
 
 ```
@@ -385,60 +442,120 @@ cat WT*HFK3FDSX7_L2_1_.qbed | bedtools sort -i > WT_HyPB_HFK3FDSX7_L2_1.qbed
 
 Before calling peaks, it's necessary to generate a list of 'TTAA' tetranucleotides throughout hg38. This is used to generate an estimate for the expected uniform insertion rate of calling cards because the HyPB transposase inserts almost exclusively at these sites. This can be done using the kmer program. There is an optional step that can be taken to use only canonical chromosomes.
 
-```{bash get TTAA, eval=FALSE}
-./kmer staging/hg38/hg38.fa TTAA > staging/hg38/hg38_TTAA.bed
+```{bash get TTAA}
+./kmer ../staging/hg38/hg38.fa TTAA > ../staging/hg38/hg38_TTAA.bed
 
-grep -v '_' staging/hg38/hg38_TTAA.bed > staging/hg38/hg38_TTAA_canon.bed
+grep -v '_' ../staging/hg38/hg38_TTAA.bed > ../staging/hg38/hg38_TTAA_canon.bed
 ```
 
 the qBED files should then be sorted before processing further.
 
-```{bash get canonical, eval=FALSE}
-
-
+```{bash sort qBED}
+#ER
 bedtools sort -i ER_HyPB_HF552DSX7_L2_1.qbed > ER_HyPB_HF552DSX7_L2_1_sorted.qbed
 bedtools sort -i ER_HyPB_HFK3FDSX7_L2_1.qbed > ER_HyPB_HFK3FDSX7_L2_1_sorted.qbed
+bedtools sort -i ER_HyPB_EKDL230008858.qbed > ER_HyPB_EKDL230008858_sorted.qbed
+#WT
 bedtools sort -i WT_HyPB_HF552DSX7_L2_1.qbed > WT_HyPB_HF552DSX7_L2_1_sorted.qbed
 bedtools sort -i WT_HyPB_HFK3FDSX7_L2_1.qbed > WT_HyPB_HFK3FDSX7_L2_1_sorted.qbed
+bedtools sort -i WT_HyPB_EKDL230008858.qbed > WT_HyPB_EKDL230008858_sorted.qbed
 
 ```
 
-Then, the sorted files can be used to generate the blocks file, this segments the reads into regions that contain a uniform insertion rate. This is used by later scripts to determine which insertions are background, and which are genuine re-directed insertions. Below is an example of the script being used on undirected reads. 
+Then, the sorted files can be used to generate the blocks file, this segments the reads into regions that contain a uniform insertion rate. This is used by later scripts to determine which insertions are background, and which are genuine re-directed insertions.
 
-```{bash create blocks, eval=FALSE}
+```{bash create blocks}
+module purge
 module load bio/SAMtools/1.9-foss-2018b
 module load bio/BEDTools/2.30.0-GCC-11.2.0
-module load lang/Miniconda3
+module load Miniconda3/23.5.2-0
 
 source activate Callingcardspy
-
-python SegmentCCF.py WT_HyPB_HF552DSX7_L2_1_sorted.qbed | sed -e '/^\s*$/d' > WT_HyPB_HF552DSX7_L2_1.blocks
+cd 202306_JS_BulkCC/outputs/
+for dir in *; do
+  cd "$dir"
+  echo "$dir"
+  for file in *.qbed; do
+    echo "$file"
+    python ../../SegmentCCF.py "$file" | sed -e '/^\s*$/d' > "$file".blocks
+    done
+    cd ../
+done cd ../../../
 ```
 
 Finally, the files can be used to call peaks, and there are separate scripts used for directed and un-directed calling cards.
 
-```{bash call peaks, eval=FALSE}
-module load bio/SAMtools/1.9-foss-2018b
-module load bio/BEDTools/2.30.0-GCC-11.2.0
-module load lang/Miniconda3
+```{bash call peaks}
+module load SAMtools/1.16.1-GCC-11.3.0
+module load BEDTools/2.30.0-GCC-11.2.0
+module load Miniconda3/23.5.2-0
 
 source activate Callingcardspy
 
-#Undirected
+cd 202306_JS_BulkCC/outputs/WT
 
-python BBPeakCaller_BRD4.py -p 30 -d 12500 -i WT_HyPB_HFK3FDSX7_L2_1_intermediate.csv \
-	WT_HyPB_HFK3FDSX7_L2_1_sorted.qbed \
-	WT_HyPB_HFK3FDSX7_L2_1.blocks \
-	staging/hg38/hg38_TTAA.bed \
-	WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed
+#Call WT peaks at p = 1e^-9, -30, -62
+
+for file in *sorted.qbed; do
+  echo "$file"
+  python ../../../BBPeakCaller_BRD4.py -p 30 -d 12500 \
+    -i "$file"_p30_intermediate.csv \
+    "$file" \
+  	"$file".blocks \
+  	../../../../staging/hg38/hg38_TTAA.bed \
+  	"$file"_p30_peaks.bed
+done
+for file in *sorted.qbed; do
+  echo "$file"
+  python ../../../BBPeakCaller_BRD4.py -p 62 -d 12500 \
+    -i "$file"_p62_intermediate.csv \
+    "$file" \
+  	"$file".blocks \
+  	../../../../staging/hg38/hg38_TTAA.bed \
+  	"$file"_p62_peaks.bed
+  	done
+for file in *sorted.qbed; do
+  echo "$file"
+  python ../../../BBPeakCaller_BRD4.py -p 9 -d 12500 \
+    -i "$file"_p9_intermediate.csv \
+    "$file" \
+  	"$file".blocks \
+  	../../../../staging/hg38/hg38_TTAA.bed \
+  	"$file"_p9_peaks.bed
+  	done
+
+#Call ER peaks with and without refining
+
+cd ../ER
+for file in *sorted.qbed; do
+  echo "$file"
+  python ../../../BBPeakCaller_TF.py -a 0.05 -m fdr_bh -d 250 -x 5000 \
+	  -i "$file"_no_r_intermediate.csv \
+  	"$file" \
+	  "$file".blocks \
+	  ../WT/WT_HyPB_EKDL230008858_sorted.qbed \
+  	"$file"_fdr_bh_0.05_peaks_nor.bed
+done
+for file in *sorted.qbed; do
+  echo "$file"
+  python ../../../BBPeakCaller_TF.py -a 0.05 -r -m fdr_bh -d 250 -x 5000 \
+	  -i "$file"_r_intermediate.csv \
+  	"$file" \
+	  "$file".blocks \
+	  ../WT/WT_HyPB_EKDL230008858_sorted.qbed \
+  	"$file"_fdr_bh_0.05_peaks_r.bed
+done
+cd ../
+
+#Clean up block file ends
+for dir in *; do
+  cd "$dir"
+  for file in *_sorted.qbed.blocks; do
+  	mv "$file" "${file%%_sorted.qbed.blocks}.blocks"
+  done
+  cd ../
+done
 	
-#ESR1 Directed
-python BBPeakCaller_TF.py -a 0.05 -m fdr_bh -d 250 -x 5000 \
-	-i ER_HyPB_HFK3FDSX7_L2_1_intermediate.csv \
-	ER_HyPB_HFK3FDSX7_L2_1_sorted.qbed \
-	ER_HyPB_HFK3FDSX7_L2_1.blocks \
-	WT_HyPB_HFK3FDSX7_L2_1.qbed \
-	ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks.bed
 ```
 
 ### Bedtools Window
@@ -447,60 +564,84 @@ Once the peak files from my data were generated, I am then able to compare their
 
 First we needed to aquire the data from a previous ChIP-Seq experiment of Andy's available from the GEO under GSE109820. In this experiment there were two types of files - .bed and .narrowPeaks - only the .bed files were relevant and as such they were sorted out from the remaining files.
 
-```{bash get data, eval=FALSE}
-wget https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE109820&format=fil
+```{bash get data}
+mkdir 202306_JS_BulkCC/ChIP
+cd 202306_JS_BulkCC/ChIP
+curl -L -o GSE109820_RAW.tar https://ftp.ncbi.nlm.nih.gov/geo/series/GSE109nnn/GSE109820/suppl/GSE109820_RAW.tar
 tar -xvf GSE109820_RAW.tar
 
 #Separate and backup useful bed files from narrow peaks that were unused. 
 
 mkdir narrow
 mkdir bed
-cp *narrow* narrow/
-mv *bed* bed/
+mkdir unused
+mv *narrow* narrow/
+mv *B45* unused/
+mv *C45* unused/
+mv *D45* unused/
+mv *B0* unused/
+mv *C0* unused/
+mv *D0* unused/
+cp *bed* bed/
 gunzip *.gz
 ```
 
 Everything was then compiled into a single directory before carrying out the window analysis. There are four different ESR1 ChIP-Seq peak files each with three time points - 0, 45 and 90 minutes post E2 treatment. Initially, I looked at using both the 45 and 90 minute files. However, it became apparent that there was not much difference between the two, with the 90 minute files showing consistently higher mapping. As a result, only the 90 minute files were carried forward
 
-```{bash collect data, eval=FALSE}
-mkdir data
-mkdir data/outputs
+```{bash collect data}
+mkdir /mnt/scratch/users/jps558/Stenning_Data_Analysis/202306_JS_BulkCC/outputs/window
+cd /mnt/scratch/users/jps558/Stenning_Data_Analysis/202306_JS_BulkCC/ChIP
+cp *GSM29704*90_peaks* ../outputs/window
+cp *peaks.bed ../outputs/window
+cd ../outputs
 
-cp *GSM29704*90_peaks* data/
-cp *peaks.bed data/
-cd data/
-
+for dir in *; do
+  cd "$dir"
+  echo "$dir"
+  for file in *peaks*; do
+  echo "$file"
+  cp "$file" ../window
+  done 
+  cd ../
+done
+cd /mnt/scratch/users/jps558/Stenning_Data_Analysis/
 ```
 
 From here, the bedtools window program was run to generate overlap analysis similar to that carried out on SP1 cards. Given my increased confidence running this pipeline and the large number of files to process, a loop script was written to process the files faster
 
-```{bash Window, eval=FALSE}
+```{bash Window}
+module load BEDTools/2.30.0-GCC-11.2.0
+
+cd 202306_JS_BulkCC/outputs/window
+mkdir results
 #Analyse ER peaks
 for CC in *r_peaks.bed; do
 	for ChIP in *GSM29704*; do
 		echo $CC
 		echo $ChIP
-		./bedtools window -c -w 1000 -a $CC -b $ChIP > outputs/1kbp_A_"$CC"_B_"$ChIP"
+		bedtools window -c -w 1000 -a $CC -b $ChIP > results/1kbp_A_"$CC"_B_"$ChIP"
 		echo "Next!"
 		done
 	done
 #Analyse WT peaks
-for CC in *30_peaks.bed; do
+for CC in *p*_peaks.bed; do
 	for ChIP in *GSM29704*; do
 		echo $CC
 		echo $ChIP
-		./bedtools window -w 1000 -c -a $CC -b $ChIP > outputs/1kbp_A_"$CC"_B_"$ChIP"
+		bedtools window -w 1000 -c -a $CC -b $ChIP > results/1kbp_A_"$CC"_B_"$ChIP"
 		echo "Next!"
 		done
 	done
+	
 #Genomic TTAA
 #NOTE - this needed to be re-run as there was not enough disk space for output, script was unchanged
-cp GenomicTTAA/hg38_TTAA.bed ../Data/
+
+cp /mnt/scratch/users/jps558/staging/hg38/hg38_TTAA.bed /mnt/scratch/users/jps558/202306_JS_BulkCC/outputs/window
 for TTAA in *TTAA.bed; do
 	for ChIP in *GSM29704*; do
 		echo $TTAA
 		echo $ChIP
-		./bedtools window -w 1000 -c -a $TTAA -b $ChIP > outputs/1kbp_A_"$TTAA"_B_"$ChIP"
+		bedtools window -w 1000 -c -a $TTAA -b $ChIP > results/1kbp_A_"$TTAA"_B_"$ChIP"
 		echo "Next!"
 		done
 	done
@@ -508,37 +649,40 @@ for TTAA in *TTAA.bed; do
 
 Then, to assess whether - given an increasing window up to 100,000 bp - the overlap would eventually approach 100%, additional code was run to generate outputs up to this distance. This was not done with genomic TTAA to avoid filling my harddrive.
 
-```{bash increasing window, eval=FALSE}
-mkdir outputs/increasingwindow
+```{bash increasing window}
+module load BEDTools/2.30.0-GCC-11.2.0
+
+mkdir results/increasingwindow
+
 #ER
 for CC in *r_peaks.bed; do
 	for ChIP in *GSM29704*; do
 		echo $CC
 		echo $ChIP
-		mkdir 20231017outputs/increasingwindow/A_"$CC"_B_"$ChIP"
-		./bedtools window -c -w 1000 -a $CC -b $ChIP > 20231017outputs/increasingwindow/A_"$CC"_B_"$ChIP"/1000bp_A_"$CC"_B_"$ChIP"
-		./bedtools window -c -w 5000 -a $CC -b $ChIP > 20231017outputs/increasingwindow/A_"$CC"_B_"$ChIP"/5000bp_A_"$CC"_B_"$ChIP"
+		mkdir results/increasingwindow/A_"$CC"_B_"$ChIP"
+		bedtools window -c -w 1000 -a $CC -b $ChIP > results/increasingwindow/A_"$CC"_B_"$ChIP"/1000bp_A_"$CC"_B_"$ChIP"
+		bedtools window -c -w 5000 -a $CC -b $ChIP > results/increasingwindow/A_"$CC"_B_"$ChIP"/5000bp_A_"$CC"_B_"$ChIP"
 		i=10000
 		while [ $i -le 100000 ]
 		do
 		echo $i
-    		./bedtools window -c -w $i -a $CC -b $ChIP > 20231017outputs/increasingwindow/A_"$CC"_B_"$ChIP"/"$i"bp_A_"$CC"_B_"$ChIP"
+    		bedtools window -c -w $i -a $CC -b $ChIP > results/increasingwindow/A_"$CC"_B_"$ChIP"/"$i"bp_A_"$CC"_B_"$ChIP"
     i=$(($i+10000))
 done
 
 #Undirected
-for CC in *30_peaks.bed; do
+for CC in *p*_peaks.bed; do
 	for ChIP in *GSM29704*; do
 		echo $CC
 		echo $ChIP
-		mkdir 20231017outputs/increasingwindow/A_"$CC"_B_"$ChIP"
-				./bedtools window -c -w 1000 -a $CC -b $ChIP > 20231017outputs/increasingwindow/A_"$CC"_B_"$ChIP"/1000bp_A_"$CC"_B_"$ChIP"
-		./bedtools window -c -w 5000 -a $CC -b $ChIP > 20231017outputs/increasingwindow/A_"$CC"_B_"$ChIP"/5000bp_A_"$CC"_B_"$ChIP"
+		mkdir results/increasingwindow/A_"$CC"_B_"$ChIP"
+				bedtools window -c -w 1000 -a $CC -b $ChIP > results/increasingwindow/A_"$CC"_B_"$ChIP"/1000bp_A_"$CC"_B_"$ChIP"
+		bedtools window -c -w 5000 -a $CC -b $ChIP > results/increasingwindow/A_"$CC"_B_"$ChIP"/5000bp_A_"$CC"_B_"$ChIP"
 		i=10000
 		while [ $i -le 100000 ]
 		do
 		echo $i
-    		./bedtools window -c -w $i -a $CC -b $ChIP > 20231017outputs/increasingwindow/A_"$CC"_B_"$ChIP"/"$i"bp_A_"$CC"_B_"$ChIP"
+    		bedtools window -c -w $i -a $CC -b $ChIP > results/increasingwindow/A_"$CC"_B_"$ChIP"/"$i"bp_A_"$CC"_B_"$ChIP"
     i=$(($i+10000))
 done
 done
@@ -575,9 +719,9 @@ Genocol_names = c("Chromosome", "Position Start", "Position End", 'Name', 'Score
 
 ##Read data
 #Variables named <Window '-a'><Window'-b'>
-ESR1_HyPB_A90 = read.table("20231017outputs/1kbp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
-Undir_HyPB_A90 = read.table("20231017outputs/1kbp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
-TTAA_A90 = read.table("20231017outputs/1kbp_A_hg38_TTAA.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
+ESR1_HyPB_A90 = read.table("results/1kbp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+Undir_HyPB_A90 = read.table("results/1kbp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+TTAA_A90 = read.table("results/1kbp_A_hg38_TTAA.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
 
 
 ```
@@ -628,7 +772,7 @@ A90_Figure
 
 ```
 
-This was repeated for each of the calling card peak files 
+This was repeated for each of the calling card peak files
 
 ### Overlap within an increasing window size up to 100,000 bp
 
@@ -644,7 +788,7 @@ library(ggthemes)
 ## SEARCH "C:/<Your Directory>" and replace it with the correct path
 
 #To test
-setwd("C:/Users/JackP/Documents/GitHub/Stenning_data_analysis/Data/20231017outputs/increasingwindow/") 
+setwd("C:/Users/JackP/Documents/GitHub/Stenning_data_analysis/Data/results/increasingwindow/") 
 #For markdown
 #setwd("C:/<Your Directory>/Stenning_data_analysis/Data") 
 
@@ -897,20 +1041,18 @@ HF5_A90_Incrw_Figure
 
 ## What is this data
 
-Firstly, the data was provided to us as fastq files, but each replicate appears to have four files. For ER replicate one, two are labelled ER1_EKDL230008858-1A_HF552DSX7* and the other two are ER1_EKDL230008858-1A_HFK3FDSX7*. Each of these has either of these two suffixes L2_1.fq or L2_2.fq. Through looking at the FastQC data, it appeared that L2_2.fq files had a much more varied sequence at the beginning of each read, where as the vast majority of L2_1.fq had the same beginning sequence, that matched with the appropriate barcode for that condition. 
+Firstly, the data was provided to us as fastq files, but each replicate appears to have four files. For ER replicate one, two are labelled ER1_EKDL230008858-1A_HF552DSX7\* and the other two are ER1_EKDL230008858-1A_HFK3FDSX7\*. Each of these has either of these two suffixes L2_1.fq or L2_2.fq. Through looking at the FastQC data, it appeared that L2_2.fq files had a much more varied sequence at the beginning of each read, where as the vast majority of L2_1.fq had the same beginning sequence, that matched with the appropriate barcode for that condition.
 
-With this info, I determined that the L2_2.fq files were the paired ended read, this can be discarded in bulk CC sequencing and so only the L2_1.fq files were carried forward with the analysis. They were treated as separate files throughout this process as I was unsure why there were two - it has now been pointed out to me, this is likely due to the fact they were run in two different flow cells. As such, they could have been combined. Further analysis will be carried out with these files merged into one. 
+With this info, I determined that the L2_2.fq files were the paired ended read, this can be discarded in bulk CC sequencing and so only the L2_1.fq files were carried forward with the analysis. They were treated as separate files throughout this process as I was unsure why there were two - it has now been pointed out to me, this is likely due to the fact they were run in two different flow cells. As such, they could have been combined. Further analysis will be carried out with these files merged into one.
 
-I found that the number of overlapping reads was slightly better using peaks from [X]_EKDL230008858-1A_HFK3FDSX7 files than [X]_EKDL230008858-1A_HF552DSX7. As such, I will only be discussing data from [X]_EKDL230008858-1A_HFK3FDSX7_L2_1 files in this markdown.
-
+I found that the number of overlapping reads was slightly better using peaks from [X]\_EKDL230008858-1A_HFK3FDSX7 files than [X]\_EKDL230008858-1A_HF552DSX7. As such, I will only be discussing data from [X]\_EKDL230008858-1A_HFK3FDSX7_L2_1 files in this markdown.
 
 The ChIP-Seq data from GSE109820 contained four replicates, A, B, C and D. Each of these replicates had samples collected at 0, 45 and 90 mintues post-treament with E2 (an ER agonist). The 0 time sample was discarded and the difference between 45 min and 90 min samples were tested by looking at replicate A
 
 ## Calling cards with 1000 bp overlap window with one ChIP-Seq replicate - A45 and A90
 
-
-
 ### Figure 1
+
 ```{r ER_A45, echo= FALSE}
 ############# LOOK HERE ######################
 #add or delete the '#' symbol below on install packages
@@ -936,9 +1078,9 @@ Genocol_names = c("Chromosome", "Position Start", "Position End", 'Name', 'Score
 
 ##Read data
 #Variables named <Window '-a'><Window'-b'>
-ESR1_HyPB_A45 = read.table("20231017outputs/1kbp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970403_A45_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
-Undir_HyPB_A45 = read.table("20231017outputs/1kbp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970403_A45_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
-TTAA_A45 = read.table("20231017outputs/1kbp_A_hg38_TTAA.bed_B_GSM2970403_A45_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
+ESR1_HyPB_A45 = read.table("results/1kbp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970403_A45_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+Undir_HyPB_A45 = read.table("results/1kbp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970403_A45_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+TTAA_A45 = read.table("results/1kbp_A_hg38_TTAA.bed_B_GSM2970403_A45_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
 
 #Counting the total reads
 ESR1_total=nrow(ESR1_HyPB_A45)
@@ -979,9 +1121,8 @@ A45_Figure
 
 ```
 
-
-
 ### Figure 2
+
 ```{r ER_A90, echo= FALSE}
 ############# LOOK HERE ######################
 #add or delete the '#' symbol below on install packages
@@ -1007,9 +1148,9 @@ Genocol_names = c("Chromosome", "Position Start", "Position End", 'Name', 'Score
 
 ##Read data
 #Variables named <Window '-a'><Window'-b'>
-ESR1_HyPB_A90 = read.table("20231017outputs/1kbp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
-Undir_HyPB_A90 = read.table("20231017outputs/1kbp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
-TTAA_A90 = read.table("20231017outputs/1kbp_A_hg38_TTAA.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
+ESR1_HyPB_A90 = read.table("results/1kbp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+Undir_HyPB_A90 = read.table("results/1kbp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+TTAA_A90 = read.table("results/1kbp_A_hg38_TTAA.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
 
 #Counting the total reads
 ESR1_total=nrow(ESR1_HyPB_A90)
@@ -1051,15 +1192,14 @@ A90_Figure
 
 ```
 
-As you can see, there is both very little difference in the number of overlapping reads and very little difference between the overlap in A45 and A90. This was confirmed in the other replicates and as such the 45 minute samples will not be discussed further. 
+As you can see, there is both very little difference in the number of overlapping reads and very little difference between the overlap in A45 and A90. This was confirmed in the other replicates and as such the 45 minute samples will not be discussed further.
 
-I found it surprising that so few HyPB-ER peaks overlapped with ChIP-Seq peaks and that the undirected calling cards had more overlap than ER directed, so I plotted the results from the remaining ChIP-Seq samples to see how they look. 
+I found it surprising that so few HyPB-ER peaks overlapped with ChIP-Seq peaks and that the undirected calling cards had more overlap than ER directed, so I plotted the results from the remaining ChIP-Seq samples to see how they look.
 
 ## Calling cards with 1000 bp overlap window with one ChIP-Seq replicate - B90, C90, D90
 
-
-
 ### Figure 3
+
 ```{r ER_B90, echo = FALSE}
 ############# LOOK HERE ######################
 #add or delete the '#' symbol below on install packages
@@ -1085,9 +1225,9 @@ Genocol_names = c("Chromosome", "Position Start", "Position End", 'Name', 'Score
 
 ##Read data
 #Variables named <Window '-a'><Window'-b'>
-ESR1_HyPB_B90 = read.table("20231017outputs/1kbp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970407_B90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
-Undir_HyPB_B90 = read.table("20231017outputs/1kbp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970407_B90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
-TTAA_B90 = read.table("20231017outputs/1kbp_A_hg38_TTAA.bed_B_GSM2970407_B90_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
+ESR1_HyPB_B90 = read.table("results/1kbp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970407_B90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+Undir_HyPB_B90 = read.table("results/1kbp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970407_B90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+TTAA_B90 = read.table("results/1kbp_A_hg38_TTAA.bed_B_GSM2970407_B90_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
 
 #Counting the total reads
 ESR1_total=nrow(ESR1_HyPB_B90)
@@ -1128,9 +1268,8 @@ B90_Figure
 
 ```
 
-
-
 ### Figure 4
+
 ```{r ER_C90, echo=FALSE}
 ############# LOOK HERE ######################
 #add or delete the '#' symbol below on install packages
@@ -1156,9 +1295,9 @@ Genocol_names = c("Chromosome", "Position Start", "Position End", 'Name', 'Score
 
 ##Read data
 #Variables named <Window '-a'><Window'-b'>
-ESR1_HyPB_C90 = read.table("20231017outputs/1kbp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
-Undir_HyPB_C90 = read.table("20231017outputs/1kbp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
-TTAA_C90 = read.table("20231017outputs/1kbp_A_hg38_TTAA.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
+ESR1_HyPB_C90 = read.table("results/1kbp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+Undir_HyPB_C90 = read.table("results/1kbp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+TTAA_C90 = read.table("results/1kbp_A_hg38_TTAA.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
 
 #Counting the total reads
 ESR1_total=nrow(ESR1_HyPB_C90)
@@ -1200,9 +1339,8 @@ C90_Figure
 
 ```
 
-
-
 ### Figure 5
+
 ```{r ER_D90, echo= FALSE}
 ############# LOOK HERE ######################
 #add or delete the '#' symbol below on install packages
@@ -1228,9 +1366,9 @@ Genocol_names = c("Chromosome", "Position Start", "Position End", 'Name', 'Score
 
 ##Read data
 #Variables named <Window '-a'><Window'-b'>
-ESR1_HyPB_D90 = read.table("20231017outputs/1kbp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970413_D90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
-Undir_HyPB_D90 = read.table("20231017outputs/1kbp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970413_D90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
-TTAA_D90 = read.table("20231017outputs/1kbp_A_hg38_TTAA.bed_B_GSM2970413_D90_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
+ESR1_HyPB_D90 = read.table("results/1kbp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970413_D90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+Undir_HyPB_D90 = read.table("results/1kbp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970413_D90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+TTAA_D90 = read.table("results/1kbp_A_hg38_TTAA.bed_B_GSM2970413_D90_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
 
 #Counting the total reads
 ESR1_total=nrow(ESR1_HyPB_D90)
@@ -1272,19 +1410,16 @@ D90_Figure
 
 ```
 
-Unfortunately, it appears that all CC overlap with these ChIP-Seq peaks is also very low and undirected peaks are overlapping much more than directed. This was the same when using the peak files provided in the Moudgil et al., 2020. 
-
-
+Unfortunately, it appears that all CC overlap with these ChIP-Seq peaks is also very low and undirected peaks are overlapping much more than directed. This was the same when using the peak files provided in the Moudgil et al., 2020.
 
 ## Increasing Calling Cards window up to 100,000 bp to assess overlap with ChIP-Seq peaks - A90 and C90
 
-To see if eventually overlap would be saturated if the window size increases, I wrote a script to increase the window size up to 100,000 bp. In theory, as the window gets larger and larger, eventually all of the reads should overlap with a ChIP-Seq peak. 
+To see if eventually overlap would be saturated if the window size increases, I wrote a script to increase the window size up to 100,000 bp. In theory, as the window gets larger and larger, eventually all of the reads should overlap with a ChIP-Seq peak.
 
-ChIP-Seq samples A90 and C90 were used as they represent the samples with the most and least overlap with CC peaks respectively. 
-
-
+ChIP-Seq samples A90 and C90 were used as they represent the samples with the most and least overlap with CC peaks respectively.
 
 ### Figure 6
+
 ```{r ER Increasing window A90, echo= FALSE}
 #Load software
 library(ggplot2)
@@ -1295,7 +1430,7 @@ library(ggthemes)
 ## SEARCH "C:/<Your Directory>" and replace it with the correct path
 
 #To test
-setwd("C:/Users/JackP/Documents/GitHub/Stenning_data_analysis/Data/20231017outputs/increasingwindow/") 
+setwd("C:/Users/JackP/Documents/GitHub/Stenning_data_analysis/Data/results/increasingwindow/") 
 #For markdown
 #setwd("C:/<Your Directory>/Stenning_data_analysis/Data") 
 
@@ -1551,9 +1686,8 @@ HF5_A90_Incrw_Figure
 
 ```
 
-
-
 ### Figure 7
+
 ```{r ER increasing window C90, echo= FALSE}
 #Load software
 library(ggplot2)
@@ -1564,7 +1698,7 @@ library(ggthemes)
 ## SEARCH "C:/<Your Directory>" and replace it with the correct path
 
 #To test
-setwd("C:/Users/JackP/Documents/GitHub/Stenning_data_analysis/Data/20231017outputs/increasingwindow/") 
+setwd("C:/Users/JackP/Documents/GitHub/Stenning_data_analysis/Data/results/increasingwindow/") 
 #For markdown
 #setwd("C:/<Your Directory>/Stenning_data_analysis/Data") 
 
@@ -1826,11 +1960,10 @@ Although these plots show a trend up to saturation, neither of them make it to 8
 
 I have a hypothesis that this apparent lack of overlap is actually being caused by the Bayesian block method of analysis. The undirected HyPB has an affinity for BRD4, shown by their co-immunoprecipitation, which means that it will be inserting SRTs into enhancer and super enhancer sites. ESR1 is thought to act as a mediator of enchancer and promoter interaction, meaning that both ESR1 and BRD4 could be co-occupying the same sites. This could be having an effect where the undirected insertions are clustered in very similar places to directed insertions, so that when the Baysean block are made, the peak calling program might not be able to correctly identify the difference between background and genuine signal - effectively masking or diminishing the signal.
 
-I believe this is supported by the fact that gene ontology shows that alot of the most represented genes in ER directed and undirected calling cards are the same. 
+I believe this is supported by the fact that gene ontology shows that alot of the most represented genes in ER directed and undirected calling cards are the same.
 
 # Future directions
 
-I will re-analyse this data, ensuring no mistakes have been made in the processing. I will also combine the two ER flow cell files as well as the ChIP-Seq replicates for increased statistical power. 
+I will re-analyse this data, ensuring no mistakes have been made in the processing. I will also combine the two ER flow cell files as well as the ChIP-Seq replicates for increased statistical power.
 
-Another suggestion made by Andy was to subtract a BRD4 ChIP-Seq bed file from my ER ChIP-Seq. This should, in theory, remove all of the enhancer sites that would be bound in these cells and if used to run the bedtools window analysis, it could be used to give an indication whether my hypothesis is correct. It could then be tested by trying to find alternative analysis methods. 
-
+Another suggestion made by Andy was to subtract a BRD4 ChIP-Seq bed file from my ER ChIP-Seq. This should, in theory, remove all of the enhancer sites that would be bound in these cells and if used to run the bedtools window analysis, it could be used to give an indication whether my hypothesis is correct. It could then be tested by trying to find alternative analysis methods.
