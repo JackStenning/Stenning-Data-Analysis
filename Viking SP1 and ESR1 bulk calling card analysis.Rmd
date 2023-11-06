@@ -17,7 +17,7 @@ After running the overlap analysis on SP1 calling cards and SP1 ChIP-Seq, I want
 
 'Processing Bulk Calling Card Sequencing Data' <https://www.protocols.io/view/processing-bulk-calling-card-sequencing-data-n2bvjr25xlk5/v1> 'Calling Peaks on piggyBac Calling Card Data' <https://www.protocols.io/view/calling-peaks-on-piggybac-calling-card-data-4r3l289dql1y/v1>
 
-This Rmd is executable, please make sure that the accompanying 'Data' directory has been extracted and stored into the same directory as this file.
+This Rmd is executable, please make sure that the accompanying 'Data' directory has been extracted and stored into the same directory as this file. To save time, all of the code blocks up  to 'Peak calling' have already been run and their outputs were included in the Data/ directory. Please make sure this directory is in the correct location before beginning.
 
 # Method
 
@@ -29,8 +29,7 @@ Firstly, the barcode and index sequence had to be removed from the raw reads ER 
 
 Given that all of the barcodes are the same for samples within each condition, a loop script was written to trim the barcodes from ER directed and undirected calling cards.
 
-```{bash cut barcode}
-### bash cut barcode
+```{bash cut barcode, eval=FALSE}
 #Load modules
 module load cutadapt/3.4-GCCcore-10.3.0
 
@@ -80,7 +79,7 @@ cd ../
 
 However, although the index sequence is different for each of the replicates within a condition, trimming of these sequences can be carried out in one script by replacing the index sequence with 'NNNNNNNNNN' as cut adapt can handle degenerate sequence within adaptors. The code below is an example of the processing for a single replicate - ER1, other replicates use the same code, with the file name and index sequence supplemented for the correct versions.
 
-```{bash cut index}
+```{bash cut index, eval=FALSE}
 #Load modules
 module load cutadapt/3.4-GCCcore-10.3.0
 
@@ -104,7 +103,7 @@ cd ../
 
 Once all of the files have been trimmed, the reads can be aligned to hg38. Contrary to the protocol.io, BWA MEM was used as novoalign was not available on the Viking HPCC. The code below is an example of the processing for a single replicate - ER1, other replicates use the same code, with the file name supplemented for the correct versions.
 
-```{bash align}
+```{bash align, eval=FALSE}
 #purge then load modules
 module purge
 module load deepTools/3.5.0-foss-2021a
@@ -112,7 +111,6 @@ module load BWA/0.7.17-foss-2019b
 module load SAMtools/1.16.1-GCC-11.3.0
 module load BEDTools/2.30.0-GCC-11.2.0
 
-#This can be improved by nesting in another loop that changes the directory
 cd 202306_JS_BulkCC/
 for dir in *; do
   cd "$dir"
@@ -130,7 +128,7 @@ cd ../
 
 After, the reads can be sorted into a .bam file.
 
-```{bash sort to bam}
+```{bash sort to bam, eval=FALSE}
 #Purge then load modules
 		module purge
 		module load SAMtools/1.16.1-GCC-11.3.0
@@ -155,18 +153,17 @@ cd ../
 After this step, the TagBam.py script from Arnhav Moudgil's GitHub - <https://github.com/arnavm/calling_cards> -is run. Similarly to the adaptor trimming step, given that all of the barcodes are the same for samples within each condition, a loop script was written to trim the barcodes from ER directed and undirected calling cards. However, as the index sequence is different for each of the replicates within a condition, trimming of these sequences must be done individually for each replicate.
 
 In order to execute python code on the Viking2 HPCC I first had to set up a virtual environment.
-```{bash set up env}
+```{bash set up env, eval=FALSE}
 ### Set up env
 cd 202306_JS_BulkCC/
 python3 -m venv .CallingCardsPy
 source .CallingCardsPy/bin/activate
-python3 -m pip install twobitreader pysam numpy pandas scipy statsmodels pybedtools astropy
-
-
+python3 -m pip install pyparsing twobitreader pysam numpy pandas scipy statsmodels pybedtools astropy
+cd ../
 ```
 
 
-```{bash tag barcodes}
+```{bash tag barcodes, eval=FALSE}
 #Purge then load modules
 module purge
 module load SAMtools/1.16.1-GCC-11.3.0
@@ -174,14 +171,12 @@ module load BEDTools/2.30.0-GCC-11.2.0
 
 #Activate python environment
 module load Miniconda3/23.5.2-0
-
 #Activate python environment
-cd 202306_JS_BulkCC/
+
 command -v python
 source activate CallingCardsPy
 command -v python
 python3 -m pip install twobitreader pysam numpy pandas scipy statsmodels pybedtools astropy
-
 
 #Tag barcodes
 cd 202306_JS_BulkCC/
@@ -195,7 +190,7 @@ cd "$direct"
 	done
 	cd ../
 done
-for WT*; do
+for direct in WT*; do
 cd "$direct"
 	for file in *mapped.bam; do
 		python ../../TagBam.py \
@@ -206,11 +201,29 @@ cd "$direct"
 	cd ../
 done
 cd ../
+
+#TAG WT barcodes
+echo "bash TAG WT barcodes"
+cd 202306_JS_BulkCC/
+for direct in WT*; do
+cd "$direct"
+	for file in *mapped.bam; do
+		python ../../TagBam.py \
+ 		   --tag XP:Z:TAG \
+ 		   "$file" \
+ 		   "$file"_tagged.bam	
+	done
+	cd ../
+done
+cd ../
+
+
 ```
 
 Below is an example of one of the TagBam.py index scripts run. The code below is an example of the processing for a single replicate - ER2, other replicates use the same code, with the file name and index sequence supplemented for the correct versions.
 
-```{bash tag index}
+```{bash tag index, eval=FALSE}
+echo "bash tag index"
 cd 202306_JS_BulkCC/
 #ER1
 cd ER1/
@@ -221,9 +234,6 @@ for file in *_tagged.bam; do
 	   "$file"_tagged2.bam	
 done
 cd ../
-```
-
-```{bash tag index remainder, echo=FALSE}
 #ER2
 cd ER2/
 for file in *_tagged.bam; do
@@ -243,7 +253,7 @@ for file in *_tagged.bam; do
 done
 cd ../
 #ER5
-cd ER3/
+cd ER5/
 for file in *_tagged.bam; do
 	python ../../TagBam.py \
 	   --tag XJ:Z:CGGAGCCT \
@@ -252,7 +262,7 @@ for file in *_tagged.bam; do
 done
 cd ../
 #ER6
-cd ER3/
+cd ER6/
 for file in *_tagged.bam; do
 	python ../../TagBam.py \
 	   --tag XJ:Z:TACGCTGC \
@@ -319,7 +329,8 @@ cd ../
 
 Once all of the replicates have had their index tag added, the insertion sites can be annotated using the AnnotateInsertionSites.py script. After the .bam files can be indexed
 
-```{bash annotate insert}
+```{bash annotate insert, eval=FALSE}
+echo "bash annotate insert"
 #Purge then load modules
 module purge
 module load SAMtools/1.16.1-GCC-11.3.0
@@ -327,14 +338,7 @@ module load BEDTools/2.30.0-GCC-11.2.0
 
 #Prepare python environment
 module load Miniconda3/23.5.2-0
-
-#Activate python environment
-
-cd 202306_JS_BulkCC/ 
-command -v python
-source activate CallingCardsPy
-command -v python
-python3 -m pip install twobitreader pysam numpy pandas scipy statsmodels pybedtools astropy
+source activate CallingcardsPy
 
 cd 202306_JS_BulkCC
 for dir in *; do
@@ -356,7 +360,8 @@ done
 cd ../
 ```
 
-```{bash index bam}
+```{bash index bam, eval=FALSE}
+echo "bash index bam"
 module purge
 module load SAMtools/1.16.1-GCC-11.3.0
 
@@ -370,24 +375,19 @@ for dir in *; do
 	cd  ../
 done
 cd ../
+
 ```
 
 Finally, the files can be cleaned up and concatenated into a single file for easier use down the pipeline.
 
-```{bash convert Bam to CC}
+```{bash convert Bam to CC, eval=FALSE}
+echo "bash convert bam to CC"
 module purge
 module load SAMtools/1.16.1-GCC-11.3.0
 module load BEDTools/2.30.0-GCC-11.2.0
 
 module load Miniconda3/23.5.2-0
-
-#Activate python environment
-
-cd 202306_JS_BulkCC/
-command -v python
-source activate CallingCardsPy
-command -v python
-python3 -m pip install twobitreader pysam numpy pandas scipy statsmodels pybedtools astropy
+source activate CallingcardsPy
 
 cd 202306_JS_BulkCC/
 mkdir outputs
@@ -425,34 +425,42 @@ for dir in WT*; do
             mv "$mile" "${mile%%final.bam.qbed}.qbed"
         done
   for save in *.qbed; do
-    cp *.qbed ../outputs/ER
+    cp *.qbed ../outputs/WT
     done
   for store in *final.bam*; do
-    cp "$store" ../outputs/ER
+    cp "$store" ../outputs/WT
     done
 	cd  ../
 done
 
 #Cat ER
 cd outputs/ER
-cat ER*HF552DSX7_L2_1_.qbed | bedtools sort -i > ER_HyPB_HF552DSX7_L2_1.qbed
-cat ER*HFK3FDSX7_L2_1_.qbed | bedtools sort -i > ER_HyPB_HFK3FDSX7_L2_1.qbed
-cat ER*.qbed | bedtools sort -i > ER_HyPB_EKDL230008858.qbed
-samtools merge ER*final.bam ER_HyPB_EKDL230008858_final.bam
+mkdir combined/
+cat ER*HF552DSX7_L2_1_.qbed | bedtools sort -i > combined/ER_HyPB_HF552DSX7_L2_1.qbed
+cat ER*HFK3FDSX7_L2_1_.qbed | bedtools sort -i > combined/ER_HyPB_HFK3FDSX7_L2_1.qbed
+cat ER*.qbed | bedtools sort -i > combined/ER_HyPB_EKDL230008858.qbed
+samtools merge ER_HyPB_EKDL230008858_final.bam ER*final.bam
+cd combined/
+mv *qbed ../
+cd ../../
 
 #Cat WT
-cd ../outputs/WT
-cat WT*HF552DSX7_L2_1_.qbed | bedtools sort -i > WT_HyPB_HF552DSX7_L2_1.qbed
-cat WT*HFK3FDSX7_L2_1_.qbed | bedtools sort -i > WT_HyPB_HFK3FDSX7_L2_1.qbed
-cat WT*.qbed | bedtools sort -i > WT_HyPB_EKDL230008858.qbed
-samtools merge WT*final.bam WT_HyPB_EKDL230008858_final.bam
-cd ../../../
+cd WT
+mkdir combined/
+cat WT*HF552DSX7_L2_1_.qbed | bedtools sort -i > combined/WT_HyPB_HF552DSX7_L2_1.qbed
+cat WT*HFK3FDSX7_L2_1_.qbed | bedtools sort -i > combined/WT_HyPB_HFK3FDSX7_L2_1.qbed
+cat WT*.qbed | bedtools sort -i > combined/WT_HyPB_EKDL230008858.qbed
+samtools merge WT_HyPB_EKDL230008858_final.bam WT*final.bam
+cd combined/
+mv *qbed ../
+cd ../../../../
+
 
 ```
 
 You can also clean up intermediary file types if you dont remove the files you are interested in
 
-```{bash cleanup}
+```{bash cleanup, eval=FALSE}
 for dir in 202306_JS_BulkCC/*; do
 	cd "$dir"
 	for file in *Trimmed*; do
