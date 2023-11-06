@@ -780,7 +780,7 @@ These outputs were then transferred to my local hard drive to process in Rstudio
 
 This analysis was carried out after analysing the SP1-HyPB calling card data from Moudgil et al., 2020, so the code used was largely taken from there. I started by loading the necessary packages and reading the data into tables.
 
-```{r get data, eval=FALSE}
+```{r load data, eval=FALSE}
 
 #Load software
 library(ggplot2)
