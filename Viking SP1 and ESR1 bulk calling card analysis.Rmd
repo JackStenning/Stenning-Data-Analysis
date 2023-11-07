@@ -558,11 +558,11 @@ for file in *filtered.qbed; do
   python /mnt/scratch/users/jps558/Stenning_Data_Analysis/SegmentCCF.py "$file" | sed -e '/^\s*$/d' > "$file".blocks
   done
 cd ../WT
-done 
 for file in *filtered.qbed; do
   echo "$file"
   python /mnt/scratch/users/jps558/Stenning_Data_Analysis/SegmentCCF.py "$file" | sed -e '/^\s*$/d' > "$file".blocks
   done
+cd /mnt/scratch/users/jps558/Stenning_Data_Analysis
 ```
 
 Finally, the files can be used to call peaks, and there are separate scripts used for directed and un-directed calling cards.
@@ -572,14 +572,13 @@ module load SAMtools/1.16.1-GCC-11.3.0
 module load BEDTools/2.30.0-GCC-11.2.0
 module load Miniconda3/23.5.2-0
 
-
+cd /mnt/scratch/users/jps558/Stenning_Data_Analysis
 #Activate python environment
 
-cd 202306_JS_BulkCC/
-command -v python
-source activate source activate CallingCardsPy3
-command -v python
-python3 -m pip install twobitreader pysam numpy pandas scipy statsmodels pybedtools astropy
+python3 -m venv .CallingCardsPy3
+source activate .CallingCardsPy3/bin/activate
+python3 -m pip install pyparsing twobitreader pysam numpy pandas scipy statsmodels pybedtools astropy
+source activate CallingCardsPy3
 
 cd 202306_JS_BulkCC/outputs/WT
 
@@ -587,38 +586,38 @@ cd 202306_JS_BulkCC/outputs/WT
 
 for file in *.qbed; do
   echo "$file"
-  python ../../../BBPeakCaller_BRD4.py -p 30 -d 12500 \
+  python /mnt/scratch/users/jps558/Stenning_Data_Analysis/BBPeakCaller_BRD4.py -p 30 -d 12500 \
     -i "$file"_p30_intermediate.csv \
     "$file" \
   	"$file".blocks \
-  	../../../../staging/hg38/hg38_TTAA.bed \
+  	/mnt/scratch/users/jps558/staging/hg38/hg38_TTAA.bed \
   	"$file"_p30_peaks.bed
 done
 for file in *.qbed; do
   echo "$file"
-  python ../../../BBPeakCaller_BRD4.py -p 62 -d 12500 \
+  python /mnt/scratch/users/jps558/Stenning_Data_Analysis/BBPeakCaller_BRD4.py -p 62 -d 12500 \
     -i "$file"_p62_intermediate.csv \
     "$file" \
   	"$file".blocks \
-  	../../../../staging/hg38/hg38_TTAA.bed \
+  	/mnt/scratch/users/jps558/staging/hg38/hg38_TTAA.bed \
   	"$file"_p62_peaks.bed
-  	done
+done
 for file in *.qbed; do
   echo "$file"
-  python ../../../BBPeakCaller_BRD4.py -p 9 -d 12500 \
+  python /mnt/scratch/users/jps558/Stenning_Data_Analysis/BBPeakCaller_BRD4.py -p 9 -d 12500 \
     -i "$file"_p9_intermediate.csv \
     "$file" \
   	"$file".blocks \
-  	../../../../staging/hg38/hg38_TTAA.bed \
+  	/mnt/scratch/users/jps558/staging/hg38/hg38_TTAA.bed \
   	"$file"_p9_peaks.bed
-  	done
-
+done
+cd /mnt/scratch/users/jps558/Stenning_Data_Analysis
 #Call ER peaks with and without refining
 
-cd ../ER
+cd 202306_JS_BulkCC/outputs/ER
 for file in *.qbed; do
   echo "$file"
-  python ../../../BBPeakCaller_TF.py -a 0.05 -m fdr_bh -d 250 -x 5000 \
+  python /mnt/scratch/users/jps558/Stenning_Data_Analysis/BBPeakCaller_TF.py -a 0.05 -m fdr_bh -d 250 -x 5000 \
 	  -i "$file"_no_r_intermediate.csv \
   	"$file" \
 	  "$file".blocks \
@@ -627,7 +626,7 @@ for file in *.qbed; do
 done
 for file in *.qbed; do
   echo "$file"
-  python ../../../BBPeakCaller_TF.py -a 0.05 -r -m fdr_bh -d 250 -x 5000 \
+  python /mnt/scratch/users/jps558/Stenning_Data_Analysis/BBPeakCaller_TF.py -a 0.05 -r -m fdr_bh -d 250 -x 5000 \
 	  -i "$file"_r_intermediate.csv \
   	"$file" \
 	  "$file".blocks \
