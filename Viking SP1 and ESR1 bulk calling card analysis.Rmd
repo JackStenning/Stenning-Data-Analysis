@@ -548,7 +548,7 @@ source activate CallingCardsPython
 cd 202306_JS_BulkCC/outputs/ER
 for file in *filtered.qbed; do
   echo "$file"
-  python /mnt/scratch/users/jps558/Stenning_Data_Analysis/SegmentCCF.py "$file" | sed -e '/^\s*$/d' > "$file".blocks
+  #python /mnt/scratch/users/jps558/Stenning_Data_Analysis/SegmentCCF.py "$file" | sed -e '/^\s*$/d' > "$file".blocks
   python /mnt/scratch/users/jps558/Stenning_Data_Analysis/BBPeakCaller_TF.py -a 0.05 -m fdr_bh -d 250 -x 5000 \
     -i "$file"_no_r_intermediate.csv \
   	"$file" \
@@ -565,7 +565,7 @@ for file in *filtered.qbed; do
 cd ../WT
 for file in *filtered.qbed; do
   echo "$file"
-  python /mnt/scratch/users/jps558/Stenning_Data_Analysis/SegmentCCF.py "$file" | sed -e '/^\s*$/d' > "$file".blocks
+  #python /mnt/scratch/users/jps558/Stenning_Data_Analysis/SegmentCCF.py "$file" | sed -e '/^\s*$/d' > "$file".blocks
   python /mnt/scratch/users/jps558/Stenning_Data_Analysis/BBPeakCaller_BRD4.py -p 30 -d 12500 \
     -i "$file"_p30_intermediate.csv \
     "$file" \
@@ -585,15 +585,59 @@ for file in *filtered.qbed; do
   	/mnt/scratch/users/jps558/staging/hg38/hg38_TTAA.bed \
   	"$file"_p9_peaks.bed
   done
-  
+cd ../
   #Clean up block file ends
-for dir in *; do
-  cd "$dir"
-  for file in *.qbed.blocks; do
-  	mv "$file" "${file%%.qbed.blocks}.blocks"
-  done
-  cd ../
+
+# Capture the part of the filename you want to keep
+prefix1="ER_HyPB_EKDL230008858"
+prefix2="ER_HyPB_HF552DSX7_L2_1"
+prefix3="ER_HyPB_HFK3FDSX7_L2_1"
+# Using 'mv' and 'sed' to rename the files
+cd ER
+for file in "${prefix1}"*_sorted.qbed_filtered.qbed_fdr_bh_0.05_peaks_nor.bed; do
+    new_name=$(echo "$file" | sed "s/${prefix1}_sorted.qbed_filtered.qbed_/${prefix1}_/")
+    mv "$file" "$new_name"
 done
+for file in "${prefix2}"*_sorted.qbed_filtered.qbed_fdr_bh_0.05_peaks_nor.bed; do
+    new_name=$(echo "$file" | sed "s/${prefix2}_sorted.qbed_filtered.qbed_/${prefix2}_/")
+    mv "$file" "$new_name"
+done
+for file in "${prefix3}"*_sorted.qbed_filtered.qbed_fdr_bh_0.05_peaks_nor.bed; do
+    new_name=$(echo "$file" | sed "s/${prefix3}_sorted.qbed_filtered.qbed_/${prefix3}_/")
+    mv "$file" "$new_name"
+done
+for file in "${prefix1}"*_sorted.qbed_filtered.qbed_fdr_bh_0.05_peaks_r.bed; do
+    new_name=$(echo "$file" | sed "s/${prefix1}_sorted.qbed_filtered.qbed_/${prefix1}_/")
+    mv "$file" "$new_name"
+done
+for file in "${prefix2}"*_sorted.qbed_filtered.qbed_fdr_bh_0.05_peaks_r.bed; do
+    new_name=$(echo "$file" | sed "s/${prefix2}_sorted.qbed_filtered.qbed_/${prefix2}_/")
+    mv "$file" "$new_name"
+done
+for file in "${prefix3}"*_sorted.qbed_filtered.qbed_fdr_bh_0.05_peaks_r.bed; do
+    new_name=$(echo "$file" | sed "s/${prefix3}_sorted.qbed_filtered.qbed_/${prefix3}_/")
+    mv "$file" "$new_name"
+done
+cd ../
+# Capture the part of the filename you want to keep
+prefix1="WT_HyPB_EKDL230008858"
+prefix2="WT_HyPB_HF552DSX7_L2_1"
+prefix3="WT_HyPB_HFK3FDSX7_L2_1"
+# Using 'mv' and 'sed' to rename the files
+cd WT
+for file in "${prefix1}"*_sorted.qbed_filtered.qbed*.bed; do
+    new_name=$(echo "$file" | sed "s/${prefix1}_sorted.qbed_filtered.qbed_/${prefix1}_/")
+    mv "$file" "$new_name"
+done
+for file in "${prefix2}"*_sorted.qbed_filtered.qbed*.bed; do
+    new_name=$(echo "$file" | sed "s/${prefix2}_sorted.qbed_filtered.qbed_/${prefix2}_/")
+    mv "$file" "$new_name"
+done
+for file in "${prefix3}"*_sorted.qbed_filtered.qbed*.bed; do
+    new_name=$(echo "$file" | sed "s/${prefix3}_sorted.qbed_filtered.qbed_/${prefix3}_/")
+    mv "$file" "$new_name"
+done
+cd /mnt/scratch/users/jps558/Stenning_Data_Analysis
 ```
 
 
@@ -633,6 +677,7 @@ cd /mnt/scratch/users/jps558/Stenning_Data_Analysis/202306_JS_BulkCC/ChIP
 cp *GSM29704*90_peaks* ../outputs/window
 cp *peaks.bed ../outputs/window
 cd ../outputs
+
 
 cd ../outputs/ER
 for file in *peaks*; do
@@ -750,14 +795,14 @@ This analysis was carried out after analysing the SP1-HyPB calling card data fro
 library(ggplot2)
 library(ggthemes)
 
-#Set working directory
+ 
 
-## SEARCH "C:/<Your Directory>" and replace it with the correct path
+ 
 
-#To test
-setwd("/mnt/scratch/users/jps558/Stenning_Data_Analysis/202306_JS_BulkCC/outputs/window") 
-#For markdown
-#setwd("C:/<Your Directory>/Stenning_data_analysis/Data") 
+ 
+ 
+ 
+ 
 
 #Set column names
 col_names = c("Chromosome", "Position Start", "Position End", "Number of Overlaps with ChIP-Seq Peaks")
@@ -765,9 +810,9 @@ Genocol_names = c("Chromosome", "Position Start", "Position End", 'Name', 'Score
 
 ##Read data
 #Variables named <Window '-a'><Window'-b'>
-ESR1_HyPB_A90 = read.table("results/1kbp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
-Undir_HyPB_A90 = read.table("results/1kbp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
-TTAA_A90 = read.table("results/1kbp_A_hg38_TTAA.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
+ESR1_HyPB_A90 = read.table("202306_JS_BulkCC/outputs/window/results/1kbp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+Undir_HyPB_A90 = read.table("202306_JS_BulkCC/outputs/window/results/1kbp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+TTAA_A90 = read.table("202306_JS_BulkCC/outputs/window/results/1kbp_A_hg38_TTAA.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
 
 
 ```
@@ -829,14 +874,14 @@ The overall structure of the code to plot the increasing window outputs is the s
 library(ggplot2)
 library(ggthemes)
 
-#Set working directory
+ 
 
-## SEARCH "C:/<Your Directory>" and replace it with the correct path
+ 
 
-#To test
+ 
 setwd("/mnt/scratch/users/jps558/Stenning_Data_Analysis/202306_JS_BulkCC/outputs/window/results/increasingwindow/") 
-#For markdown
-#setwd("C:/<Your Directory>/Stenning_data_analysis/Data") 
+ 
+ 
 
 #Set column names
 col_names = c("Chromosome", "Position Start", "Position End", "Number of Overlaps with ChIP-Seq Peaks")
@@ -845,54 +890,54 @@ Genocol_names = c("Chromosome", "Position Start", "Position End", 'Name', 'Score
 ##Read data
 #Variables named <Window '-a'><Window'-b'>
 #ESR1
-ESR1_HyPB_HF5_A90_1000bp = read.table("A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed/1000bp_A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_A90_1000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed/1000bp_A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_A90_5000bp = read.table("A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed/5000bp_A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_A90_5000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed/5000bp_A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_A90_10000bp = read.table("A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed/10000bp_A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_A90_10000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed/10000bp_A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_A90_20000bp = read.table("A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed/20000bp_A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_A90_20000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed/20000bp_A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_A90_30000bp = read.table("A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed/30000bp_A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_A90_30000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed/30000bp_A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_A90_40000bp = read.table("A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed/40000bp_A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_A90_40000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed/40000bp_A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_A90_50000bp = read.table("A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed/50000bp_A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_A90_50000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed/50000bp_A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_A90_60000bp = read.table("A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed/60000bp_A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_A90_60000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed/60000bp_A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_A90_70000bp = read.table("A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed/70000bp_A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_A90_70000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed/70000bp_A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_A90_80000bp = read.table("A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed/80000bp_A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_A90_80000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed/80000bp_A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_A90_90000bp = read.table("A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed/90000bp_A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_A90_90000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed/90000bp_A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_A90_100000bp = read.table("A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed/100000bp_A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_A90_100000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed/100000bp_A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
 ##Undirected HyPB
-HyPB_HF5_A90_1000bp = read.table("A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/1000bp_A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_A90_1000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/1000bp_A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_A90_5000bp = read.table("A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/5000bp_A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_A90_5000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/5000bp_A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_A90_10000bp = read.table("A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/10000bp_A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_A90_10000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/10000bp_A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_A90_20000bp = read.table("A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/20000bp_A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_A90_20000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/20000bp_A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_A90_30000bp = read.table("A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/30000bp_A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_A90_30000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/30000bp_A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_A90_40000bp = read.table("A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/40000bp_A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_A90_40000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/40000bp_A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_A90_50000bp = read.table("A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/50000bp_A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_A90_50000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/50000bp_A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_A90_60000bp = read.table("A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/60000bp_A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_A90_60000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/60000bp_A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_A90_70000bp = read.table("A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/70000bp_A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_A90_70000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/70000bp_A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_A90_80000bp = read.table("A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/80000bp_A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_A90_80000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/80000bp_A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_A90_90000bp = read.table("A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/90000bp_A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_A90_90000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/90000bp_A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_A90_100000bp = read.table("A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/100000bp_A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_A90_100000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/100000bp_A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
 ```
 
@@ -1099,7 +1144,7 @@ The ChIP-Seq data from GSE109820 contained four replicates, A, B, C and D. Each 
 
 ### Figure 1
 
-```{r ER_A45, echo= FALSE}
+```{r ER_A45, echo=FALSE}
 ############# LOOK HERE ######################
 #add or delete the '#' symbol below on install packages
 #install.packages("Rtools")
@@ -1109,24 +1154,15 @@ install.packages("ggthemes", repos = "http://cran.us.r-project.org")
 library(ggplot2)
 library(ggthemes)
 
-#Set working directory
-
-## SEARCH "C:/<Your Directory>" and replace it with the correct path
-
-#To test
-setwd("/mnt/scratch/users/jps558/Stenning_Data_Analysis/202306_JS_BulkCC/outputs/window") 
-#For markdown
-#setwd("C:/<Your Directory>/Stenning_data_analysis/Data") 
-
 #Set column names
 col_names = c("Chromosome", "Position Start", "Position End", "Number of Overlaps with ChIP-Seq Peaks")
 Genocol_names = c("Chromosome", "Position Start", "Position End", 'Name', 'Score', 'Strand',"Number of Overlaps with ChIP-Seq Peaks")
 
 ##Read data
 #Variables named <Window '-a'><Window'-b'>
-ESR1_HyPB_A45 = read.table("results/1kbp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970403_A45_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
-Undir_HyPB_A45 = read.table("results/1kbp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970403_A45_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
-TTAA_A45 = read.table("results/1kbp_A_hg38_TTAA.bed_B_GSM2970403_A45_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
+ESR1_HyPB_A45 = read.table("202306_JS_BulkCC/outputs/window/results/1kbp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970403_A45_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+Undir_HyPB_A45 = read.table("202306_JS_BulkCC/outputs/window/results/1kbp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970403_A45_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+TTAA_A45 = read.table("202306_JS_BulkCC/outputs/window/results/1kbp_A_hg38_TTAA.bed_B_GSM2970403_A45_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
 
 #Counting the total reads
 ESR1_total=nrow(ESR1_HyPB_A45)
@@ -1173,20 +1209,20 @@ A45_Figure
 ############# LOOK HERE ######################
 #add or delete the '#' symbol below on install packages
 #install.packages("Rtools")
-install.packages("ggthemes", repos = "http://cran.us.r-project.org")
+#install.packages("ggthemes", repos = "http://cran.us.r-project.org")
 
 #Load software
 library(ggplot2)
 library(ggthemes)
 
-#Set working directory
+ 
 
-## SEARCH "C:/<Your Directory>" and replace it with the correct path
+ 
 
-#To test
-setwd("/mnt/scratch/users/jps558/Stenning_Data_Analysis/202306_JS_BulkCC/outputs/window") 
-#For markdown
-#setwd("C:/<Your Directory>/Stenning_data_analysis/Data") 
+ 
+ 
+ 
+ 
 
 #Set column names
 col_names = c("Chromosome", "Position Start", "Position End", "Number of Overlaps with ChIP-Seq Peaks")
@@ -1194,9 +1230,9 @@ Genocol_names = c("Chromosome", "Position Start", "Position End", 'Name', 'Score
 
 ##Read data
 #Variables named <Window '-a'><Window'-b'>
-ESR1_HyPB_A90 = read.table("results/1kbp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
-Undir_HyPB_A90 = read.table("results/1kbp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
-TTAA_A90 = read.table("results/1kbp_A_hg38_TTAA.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
+ESR1_HyPB_A90 = read.table("202306_JS_BulkCC/outputs/window/results/1kbp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+Undir_HyPB_A90 = read.table("202306_JS_BulkCC/outputs/window/results/1kbp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+TTAA_A90 = read.table("202306_JS_BulkCC/outputs/window/results/1kbp_A_hg38_TTAA.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
 
 #Counting the total reads
 ESR1_total=nrow(ESR1_HyPB_A90)
@@ -1250,20 +1286,20 @@ I found it surprising that so few HyPB-ER peaks overlapped with ChIP-Seq peaks a
 ############# LOOK HERE ######################
 #add or delete the '#' symbol below on install packages
 #install.packages("Rtools")
-install.packages("ggthemes", repos = "http://cran.us.r-project.org")
+#install.packages("ggthemes", repos = "http://cran.us.r-project.org")
 
 #Load software
 library(ggplot2)
 library(ggthemes)
 
-#Set working directory
+ 
 
-## SEARCH "C:/<Your Directory>" and replace it with the correct path
+ 
 
-#To test
-setwd("/mnt/scratch/users/jps558/Stenning_Data_Analysis/202306_JS_BulkCC/outputs/window") 
-#For markdown
-#setwd("C:/<Your Directory>/Stenning_data_analysis/Data") 
+ 
+ 
+ 
+ 
 
 #Set column names
 col_names = c("Chromosome", "Position Start", "Position End", "Number of Overlaps with ChIP-Seq Peaks")
@@ -1271,9 +1307,9 @@ Genocol_names = c("Chromosome", "Position Start", "Position End", 'Name', 'Score
 
 ##Read data
 #Variables named <Window '-a'><Window'-b'>
-ESR1_HyPB_B90 = read.table("results/1kbp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970407_B90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
-Undir_HyPB_B90 = read.table("results/1kbp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970407_B90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
-TTAA_B90 = read.table("results/1kbp_A_hg38_TTAA.bed_B_GSM2970407_B90_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
+ESR1_HyPB_B90 = read.table("202306_JS_BulkCC/outputs/window/results/1kbp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970407_B90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+Undir_HyPB_B90 = read.table("202306_JS_BulkCC/outputs/window/results/1kbp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970407_B90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+TTAA_B90 = read.table("202306_JS_BulkCC/outputs/window/results/1kbp_A_hg38_TTAA.bed_B_GSM2970407_B90_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
 
 #Counting the total reads
 ESR1_total=nrow(ESR1_HyPB_B90)
@@ -1320,20 +1356,12 @@ B90_Figure
 ############# LOOK HERE ######################
 #add or delete the '#' symbol below on install packages
 #install.packages("Rtools")
-install.packages("ggthemes", repos = "http://cran.us.r-project.org")
+#install.packages("ggthemes", repos = "http://cran.us.r-project.org")
 
 #Load software
 library(ggplot2)
 library(ggthemes)
 
-#Set working directory
-
-## SEARCH "C:/<Your Directory>" and replace it with the correct path
-
-#To test
-setwd("/mnt/scratch/users/jps558/Stenning_Data_Analysis/202306_JS_BulkCC/outputs/window") 
-#For markdown
-#setwd("C:/<Your Directory>/Stenning_data_analysis/Data") 
 
 #Set column names
 col_names = c("Chromosome", "Position Start", "Position End", "Number of Overlaps with ChIP-Seq Peaks")
@@ -1341,9 +1369,9 @@ Genocol_names = c("Chromosome", "Position Start", "Position End", 'Name', 'Score
 
 ##Read data
 #Variables named <Window '-a'><Window'-b'>
-ESR1_HyPB_C90 = read.table("results/1kbp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
-Undir_HyPB_C90 = read.table("results/1kbp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
-TTAA_C90 = read.table("results/1kbp_A_hg38_TTAA.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
+ESR1_HyPB_C90 = read.table("202306_JS_BulkCC/outputs/window/results/1kbp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+Undir_HyPB_C90 = read.table("202306_JS_BulkCC/outputs/window/results/1kbp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+TTAA_C90 = read.table("202306_JS_BulkCC/outputs/window/results/1kbp_A_hg38_TTAA.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
 
 #Counting the total reads
 ESR1_total=nrow(ESR1_HyPB_C90)
@@ -1391,20 +1419,11 @@ C90_Figure
 ############# LOOK HERE ######################
 #add or delete the '#' symbol below on install packages
 #install.packages("Rtools")
-install.packages("ggthemes", repos = "http://cran.us.r-project.org")
+#install.packages("ggthemes", repos = "http://cran.us.r-project.org")
 
 #Load software
 library(ggplot2)
 library(ggthemes)
-
-#Set working directory
-
-## SEARCH "C:/<Your Directory>" and replace it with the correct path
-
-#To test
-setwd("/mnt/scratch/users/jps558/Stenning_Data_Analysis/202306_JS_BulkCC/outputs/window") 
-#For markdown
-#setwd("C:/<Your Directory>/Stenning_data_analysis/Data") 
 
 #Set column names
 col_names = c("Chromosome", "Position Start", "Position End", "Number of Overlaps with ChIP-Seq Peaks")
@@ -1412,9 +1431,9 @@ Genocol_names = c("Chromosome", "Position Start", "Position End", 'Name', 'Score
 
 ##Read data
 #Variables named <Window '-a'><Window'-b'>
-ESR1_HyPB_D90 = read.table("results/1kbp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970413_D90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
-Undir_HyPB_D90 = read.table("results/1kbp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970413_D90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
-TTAA_D90 = read.table("results/1kbp_A_hg38_TTAA.bed_B_GSM2970413_D90_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
+ESR1_HyPB_D90 = read.table("202306_JS_BulkCC/outputs/window/results/1kbp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970413_D90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+Undir_HyPB_D90 = read.table("202306_JS_BulkCC/outputs/window/results/1kbp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970413_D90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+TTAA_D90 = read.table("202306_JS_BulkCC/outputs/window/results/1kbp_A_hg38_TTAA.bed_B_GSM2970413_D90_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
 
 #Counting the total reads
 ESR1_total=nrow(ESR1_HyPB_D90)
@@ -1471,15 +1490,6 @@ ChIP-Seq samples A90 and C90 were used as they represent the samples with the mo
 library(ggplot2)
 library(ggthemes)
 
-#Set working directory
-
-## SEARCH "C:/<Your Directory>" and replace it with the correct path
-
-#To test
-setwd("/mnt/scratch/users/jps558/Stenning_Data_Analysis/202306_JS_BulkCC/outputs/window/results/increasingwindow/") 
-#For markdown
-#setwd("C:/<Your Directory>/Stenning_data_analysis/Data") 
-
 #Set column names
 col_names = c("Chromosome", "Position Start", "Position End", "Number of Overlaps with ChIP-Seq Peaks")
 
@@ -1488,54 +1498,54 @@ col_names = c("Chromosome", "Position Start", "Position End", "Number of Overlap
 #Variables named <Window '-a'><Window'-b'>
 #ESR1
 # Initial code with 'Z' replaced by '1000'
-ESR1_HyPB_HF5_A90_1000bp = read.table("A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed/1000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_A90_1000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed/1000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_A90_5000bp = read.table("A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed/5000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_A90_5000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed/5000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_A90_10000bp = read.table("A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed/10000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_A90_10000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed/10000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_A90_20000bp = read.table("A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed/20000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_A90_20000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed/20000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_A90_30000bp = read.table("A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed/30000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_A90_30000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed/30000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_A90_40000bp = read.table("A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed/40000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_A90_40000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed/40000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_A90_50000bp = read.table("A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed/50000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_A90_50000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed/50000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_A90_60000bp = read.table("A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed/60000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_A90_60000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed/60000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_A90_70000bp = read.table("A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed/70000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_A90_70000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed/70000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_A90_80000bp = read.table("A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed/80000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_A90_80000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed/80000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_A90_90000bp = read.table("A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed/90000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_A90_90000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed/90000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_A90_100000bp = read.table("A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed/100000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_A90_100000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed/100000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
 ##Undirected HyPB
-HyPB_HF5_A90_1000bp = read.table("A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/1000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_A90_1000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/1000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_A90_5000bp = read.table("A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/5000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_A90_5000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/5000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_A90_10000bp = read.table("A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/10000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_A90_10000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/10000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_A90_20000bp = read.table("A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/20000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_A90_20000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/20000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_A90_30000bp = read.table("A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/30000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_A90_30000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/30000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_A90_40000bp = read.table("A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/40000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_A90_40000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/40000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_A90_50000bp = read.table("A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/50000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_A90_50000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/50000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_A90_60000bp = read.table("A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/60000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_A90_60000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/60000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_A90_70000bp = read.table("A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/70000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_A90_70000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/70000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_A90_80000bp = read.table("A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/80000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_A90_80000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/80000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_A90_90000bp = read.table("A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/90000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_A90_90000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/90000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_A90_100000bp = read.table("A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/100000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_A90_100000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed/100000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
 #Genomic TTAA
 #Not run yet to save space
@@ -1739,15 +1749,6 @@ HF5_A90_Incrw_Figure
 library(ggplot2)
 library(ggthemes)
 
-#Set working directory
-
-## SEARCH "C:/<Your Directory>" and replace it with the correct path
-
-#To test
-setwd("/mnt/scratch/users/jps558/Stenning_Data_Analysis/202306_JS_BulkCC/outputs/window/results/increasingwindow/") 
-#For markdown
-#setwd("C:/<Your Directory>/Stenning_data_analysis/Data") 
-
 #Set column names
 col_names = c("Chromosome", "Position Start", "Position End", "Number of Overlaps with ChIP-Seq Peaks")
 
@@ -1756,54 +1757,54 @@ col_names = c("Chromosome", "Position Start", "Position End", "Number of Overlap
 #Variables named <Window '-a'><Window'-b'>
 #ESR1
 # Initial code with 'Z' replaced by '1000'
-ESR1_HyPB_HF5_C90_1000bp = read.table("A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970410_C90_peaks.bed/1000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_C90_1000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970410_C90_peaks.bed/1000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_C90_5000bp = read.table("A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970410_C90_peaks.bed/5000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_C90_5000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970410_C90_peaks.bed/5000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_C90_10000bp = read.table("A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970410_C90_peaks.bed/10000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_C90_10000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970410_C90_peaks.bed/10000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_C90_20000bp = read.table("A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970410_C90_peaks.bed/20000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_C90_20000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970410_C90_peaks.bed/20000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_C90_30000bp = read.table("A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970410_C90_peaks.bed/30000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_C90_30000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970410_C90_peaks.bed/30000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_C90_40000bp = read.table("A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970410_C90_peaks.bed/40000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_C90_40000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970410_C90_peaks.bed/40000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_C90_50000bp = read.table("A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970410_C90_peaks.bed/50000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_C90_50000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970410_C90_peaks.bed/50000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_C90_60000bp = read.table("A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970410_C90_peaks.bed/60000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_C90_60000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970410_C90_peaks.bed/60000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_C90_70000bp = read.table("A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970410_C90_peaks.bed/70000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_C90_70000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970410_C90_peaks.bed/70000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_C90_80000bp = read.table("A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970410_C90_peaks.bed/80000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_C90_80000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970410_C90_peaks.bed/80000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_C90_90000bp = read.table("A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970410_C90_peaks.bed/90000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_C90_90000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970410_C90_peaks.bed/90000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-ESR1_HyPB_HF5_C90_100000bp = read.table("A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970410_C90_peaks.bed/100000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_no-r_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+ESR1_HyPB_HF5_C90_100000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970410_C90_peaks.bed/100000bp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_nor.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
 ##Undirected HyPB
-HyPB_HF5_C90_1000bp = read.table("A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed/1000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_C90_1000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed/1000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_C90_5000bp = read.table("A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed/5000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_C90_5000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed/5000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_C90_10000bp = read.table("A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed/10000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_C90_10000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed/10000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_C90_20000bp = read.table("A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed/20000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_C90_20000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed/20000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_C90_30000bp = read.table("A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed/30000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_C90_30000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed/30000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_C90_40000bp = read.table("A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed/40000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_C90_40000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed/40000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_C90_50000bp = read.table("A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed/50000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_C90_50000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed/50000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_C90_60000bp = read.table("A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed/60000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_C90_60000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed/60000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_C90_70000bp = read.table("A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed/70000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_C90_70000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed/70000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_C90_80000bp = read.table("A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed/80000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_C90_80000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed/80000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_C90_90000bp = read.table("A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed/90000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_C90_90000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed/90000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
-HyPB_HF5_C90_100000bp = read.table("A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed/100000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+HyPB_HF5_C90_100000bp = read.table("202306_JS_BulkCC/outputs/window/results/increasingwindow/A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed/100000bp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970410_C90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
 
 #Genomic TTAA
 #Not run yet to save space
