@@ -1,7 +1,7 @@
 ---
-title: "SP1 and ESR1 bulk calling card analysis"
+title: "ESR1 bulk calling card analysis following on from SP1 analysis"
 author: "Jack Stenning"
-date: "2023-10-31"
+date: "2023-11-28"
 output: html_document
 ---
 
@@ -17,13 +17,16 @@ After running the overlap analysis on SP1 calling cards and SP1 ChIP-Seq, I want
 
 'Processing Bulk Calling Card Sequencing Data' <https://www.protocols.io/view/processing-bulk-calling-card-sequencing-data-n2bvjr25xlk5/v1> 'Calling Peaks on piggyBac Calling Card Data' <https://www.protocols.io/view/calling-peaks-on-piggybac-calling-card-data-4r3l289dql1y/v1>
 
-This Rmd is executable, please make sure that the accompanying 'Data' directory has been extracted and stored into the same directory as this file. To save time, all of the code blocks up  to 'Peak calling' have already been run and their outputs were included in the Data/ directory. Please make sure this directory is in the correct location before beginning.
+The Rmd file that generated this document is executable. The data required for this analysis can be found in the '202306_JS_BulkCC' google drive link shared with you. To save time, all of the code blocks up  to 'Working in R studio' have already been run and their outputs were included in the '4 - Window outputs to plot in R' directory. Please make sure this directory is in the same location as the Rmd file before beginning.
+
+Additional data files such as the original called peak files, qbed and fastq files are also available from the google drive link in folders that begin with '3, 2 and 1' respectively if you wish to replicate my analysis.
 
 # Method
 
 ## Working on the Univeristy of York Viking HPCC
 
 ### Prepare files for peak calling
+#### Data found in '1 - 202306_JS_BulkCC'
 
 Firstly, the barcode and index sequence had to be removed from the raw reads ER and WT calling cards. Samples were differentiated by using two different barcodes to denote whether the calling cards were directed by ER through the HyPB-ER fusion protein, or whether they are undirected by the Wild Type HyPB protein. Each replicate carried a unique Nextera index sequence to identify replicates within conditions.
 
@@ -215,7 +218,7 @@ cd ../
 
 ```
 
-Below is an example of one of the TagBam.py index scripts run. The code below is an example of the processing for a single replicate - ER2, other replicates use the same code, with the file name and index sequence supplemented for the correct versions.
+Once the barcodes are tagged, the index sequence can also be tagged.
 
 ```{bash tag index, eval=FALSE}
 echo "bash tag index"
@@ -474,10 +477,11 @@ cd ../
 ```
 
 ### Peak calling
+#### Data found in '2 - .qBED files needed from Peak Calling'
 
 Before calling peaks, it's necessary to generate a list of 'TTAA' tetranucleotides throughout hg38. This is used to generate an estimate for the expected uniform insertion rate of calling cards because the HyPB transposase inserts almost exclusively at these sites. This can be done using the kmer program. There is an optional step that can be taken to use only canonical chromosomes.
 
-```{bash get TTAA}
+```{bash get TTAA, eval=FALSE}
 chmod +x kmer
 ./kmer ../staging/hg38/hg38.fa TTAA > ../staging/hg38/hg38_TTAA.bed
 
@@ -486,7 +490,7 @@ grep -v '_' ../staging/hg38/hg38_TTAA.bed > ../staging/hg38/hg38_TTAA_canon.bed
 
 the qBED files should then be sorted before processing further.
 
-```{bash sort qBED}
+```{bash sort qBED, eval=FALSE}
 module load BEDTools/2.30.0-GCC-11.2.0
 cd 202306_JS_BulkCC/outputs
 #ER
@@ -511,7 +515,7 @@ cd ../../../
 
 I had previously filtered blacklisted sites from SP1 calling cards before creating block files, I will do the same here but will also process the unfiltered reads alongside.
 
-```{bash filter}
+```{bash filter, eval=FALSE}
 #Load modules
 module load BEDTools/2.30.0-GCC-11.2.0
 
@@ -519,19 +523,23 @@ cd 202306_JS_BulkCC/outputs/ER
 
 #Filter
 for file in *sorted.qbed; do
-    bedtools subtract -a  "$file" -b /mnt/scratch/users/jps558/staging/hg38/Blacklist/hg38-blacklist.v2.bed > "$file"_filtered.qbed
+    bedtools subtract -a  "$file" -b /mnt/scratch/users/jps558/staging/hg38/Blacklist/hg38-blacklist.v2.bed > \
+    "$file"_filtered.qbed
   done
 cd ../WT
 for file in *sorted.qbed; do
-    bedtools subtract -a  "$file" -b /mnt/scratch/users/jps558/staging/hg38/Blacklist/hg38-blacklist.v2.bed > "$file"_filtered.qbed
+    bedtools subtract -a  "$file" -b /mnt/scratch/users/jps558/staging/hg38/Blacklist/hg38-blacklist.v2.bed > \
+    "$file"_filtered.qbed
   done
 cd /mnt/scratch/users/jps558/Stenning_Data_Analysis
 ```
 
 
-Then, the sorted files can be used to generate the blocks file, this segments the reads into regions that contain a uniform insertion rate. This is used by later scripts to determine which insertions are background, and which are genuine re-directed insertions. Finally, the files can be used to call peaks, and there are separate scripts used for directed and un-directed calling cards.
+Then, the sorted files can be used to generate the blocks file, this segments the reads into regions that contain a uniform insertion rate. This is used by later scripts to determine which insertions are background, and which are genuine re-directed insertions. Finally, the files can be used to call peaks, and there are separate scripts used for directed and un-directed calling cards. 
 
-```{bash create blocks and call peaks}
+Additional script has been included here to clean the file ends of unnecessarily long suffix'.
+
+```{bash create blocks and call peaks, eval=FALSE}
 module purge
 module load SAMtools/1.16.1-GCC-11.3.0
 module load BEDTools/2.30.0-GCC-11.2.0
@@ -642,12 +650,13 @@ cd /mnt/scratch/users/jps558/Stenning_Data_Analysis
 
 
 ### Bedtools Window
+#### Data found in '3 - called peak files Needed from Bedtools Window'
 
 Once the peak files from my data were generated, I am then able to compare their overlap with existing ER ChIP-Seq data.
 
 First we needed to aquire the data from a previous ChIP-Seq experiment of Andy's available from the GEO under GSE109820. In this experiment there were two types of files - .bed and .narrowPeaks - only the .bed files were relevant and as such they were sorted out from the remaining files.
 
-```{bash get data}
+```{bash get data, eval=FALSE}
 mkdir 202306_JS_BulkCC/ChIP
 cd 202306_JS_BulkCC/ChIP
 curl -L -o GSE109820_RAW.tar https://ftp.ncbi.nlm.nih.gov/geo/series/GSE109nnn/GSE109820/suppl/GSE109820_RAW.tar
@@ -669,9 +678,9 @@ cp *bed* bed/
 gunzip *.gz
 ```
 
-Everything was then compiled into a single directory before carrying out the window analysis. There are four different ESR1 ChIP-Seq peak files each with three time points - 0, 45 and 90 minutes post E2 treatment. Initially, I looked at using both the 45 and 90 minute files. However, it became apparent that there was not much difference between the two, with the 90 minute files showing consistently higher mapping. As a result, only the 90 minute files were carried forward
+Everything was then compiled into a single directory before carrying out the window analysis. There are four different ESR1 ChIP-Seq peak files each with three time points - 0, 45 and 90 minutes post E2 treatment. Initially, I looked at using both the 45 and 90 minute files. However, it became apparent that there was not much difference between the two, with the 90 minute files showing consistently higher mapping. As a result, only the 90 minute files were carried forward in downstream analysis.
 
-```{bash collect data}
+```{bash collect data, eval=FALSE}
 mkdir /mnt/scratch/users/jps558/Stenning_Data_Analysis/202306_JS_BulkCC/outputs/window
 cd /mnt/scratch/users/jps558/Stenning_Data_Analysis/202306_JS_BulkCC/ChIP
 cp *GSM29704*90_peaks* ../outputs/window
@@ -692,9 +701,9 @@ done
 cd /mnt/scratch/users/jps558/Stenning_Data_Analysis/
 ```
 
-From here, the bedtools window program was run to generate overlap analysis similar to that carried out on SP1 cards. Given my increased confidence running this pipeline and the large number of files to process, a loop script was written to process the files faster
+From here, the bedtools window program was run to generate overlap analysis similar to that carried out on SP1 cards.
 
-```{bash Window}
+```{bash Window, eval=FALSE}
 module load BEDTools/2.30.0-GCC-11.2.0
 
 cd 202306_JS_BulkCC/outputs/WT
@@ -738,9 +747,9 @@ for TTAA in *TTAA.bed; do
 	done
 ```
 
-Then, to assess whether - given an increasing window up to 100,000 bp - the overlap would eventually approach 100%, additional code was run to generate outputs up to this distance. This was not done with genomic TTAA to avoid filling my harddrive.
+Then, to assess whether - given an increasing window up to 100,000 bp - the overlap would eventually approach 100%, additional code was run to generate outputs up to this distance. This was not done with genomic TTAA to avoid filling my hard drive.
 
-```{bash increasing window}
+```{bash increasing window, eval=FALSE}
 module load BEDTools/2.30.0-GCC-11.2.0
 cd 202306_JS_BulkCC/outputs/window
 mkdir results/increasingwindow
@@ -784,6 +793,7 @@ done
 These outputs were then transferred to my local hard drive to process in Rstudio.
 
 ## Working in Rstudio
+#### Data found in '4 - Window outputs to plot in R'
 
 ### Overlap within 1000 bp
 
@@ -797,7 +807,8 @@ library(ggthemes)
 
 #Set column names
 col_names = c("Chromosome", "Position Start", "Position End", "Number of Overlaps with ChIP-Seq Peaks")
-Genocol_names = c("Chromosome", "Position Start", "Position End", 'Name', 'Score', 'Strand',"Number of Overlaps with ChIP-Seq Peaks")
+Genocol_names = c("Chromosome", "Position Start", "Position End", 'Name', 'Score', 'Strand',
+                  "Number of Overlaps with ChIP-Seq Peaks")
 
 ##Read data
 #Variables named <Window '-a'><Window'-b'>
@@ -834,7 +845,7 @@ Finally, the data can be put into a table and a graph plotted to show the percen
 #Create table to plot
 A90_Finalpercentage_table = data.frame(Name=c('ESR1-HyPB 1kbp', 'Undirected HyPB 1kbp', 'Genomic TTAA 1kbp'),
                                        Total=rep(c(ESR1_total, HyPB_total, TTAA_total)),
-                                       Overlap_withChIP= c(ESR1_overlap, HyPB_overlap, TTAA_overlap),
+                                       Number_Not_Overlapping_withChIP= c(ESR1_overlap, HyPB_overlap, TTAA_overlap),
                                        PercentageOverlapping= c(Percentage_ESR1, Percentage_HyPB, Percentage_TTAA))
 
 #Then we plot
@@ -843,11 +854,16 @@ A90_Figure <- ggplot(data = A90_Finalpercentage_table,
                      aes(x= factor(Name, graphorder), 
                          y = PercentageOverlapping,
                          fill = Name, 
-                         stat("identity"))) +  geom_col(color = "black",
-                                                        show.legend = FALSE) +  ylim(0, 100) + labs(x = "Name and Distance from ChIP-Seq Peak", 
-                                                                                                    y = "% of CC peaks overlapping with ChIP-Seq peak",
-                                                                                                    title = "Calling Cards and ChIP-Seq Overlap",
-                                                                                                    subtitle = "Determining percentage of overlapping peaks from ESR1-HyPB and HyPB \nsample HF552DSX7 within 1000 bp of ESR1 ChIP-Seq peaks from \nsample A90") +  theme_dark() + coord_cartesian(expand = FALSE, clip = "off") + geom_hline(yintercept = 83, linetype = "dashed", linewidth = 1) 
+                         stat("identity"))) +  
+                        geom_col(color = "black", show.legend = FALSE) +
+                        ylim(0, 100) + 
+                        labs(x = "Name and Distance from ChIP-Seq Peak",
+                             y = "% of CC peaks overlapping with ChIP-Seq peak",
+                             title = "Calling Cards and ChIP-Seq Overlap",
+                             subtitle = "Determining percentage of overlapping peaks from ESR1-HyPB and HyPB \nsample HF552DSX7 within 1000 bp of ESR1 ChIP-Seq peaks from \nsample A90") + 
+                        theme_dark() + 
+                        coord_cartesian(expand = FALSE, clip = "off") + 
+                        geom_hline(yintercept = 83, linetype = "dashed", linewidth = 1) 
 
 
 A90_Figure
@@ -1044,7 +1060,7 @@ HF5_A90_Incrw_Finalpercentage_table = data.frame(Name=graphorder,
                                                              HyPB_total,
                                                              HyPB_total, 
                                                              HyPB_total)),
-                                                 Overlap_withChIP= c(ESR1_HF5_overlap_1000bp,
+                                                 Number_Not_Overlapping_withChIP= c(ESR1_HF5_overlap_1000bp,
                                                                      ESR1_HF5_overlap_5000bp,
                                                                      ESR1_HF5_overlap_10000bp,
                                                                      ESR1_HF5_overlap_20000bp,
@@ -1099,34 +1115,37 @@ HF5_A90_Incrw_Figure <- ggplot(data = HF5_A90_Incrw_Finalpercentage_table,
                                aes(x= factor(Name, graphorder), 
                                    y = PercentageOverlapping,
                                    fill = Name, 
-                                   stat("identity"))) +  geom_col(color = "black",
-                                                                  show.legend = FALSE) +  ylim(0, 100) + labs(x = "Distance from ChIP-Seq Peak (kbp)", 
-                                                                                                              y = "% of CC peaks overlapping with ChIP-Seq peak",
-                                                                                                              title = "Calling Cards and ChIP-Seq Overlap",
-                                                                                                              subtitle = "ESR1-HyPB and HyPB sample HF552DSX7 overlap with ESR1 ChIP-Seq \npeaks from sample A90, increasing the distance window from 1kbp to 100kbp") +  theme_dark() + coord_cartesian(expand = FALSE, clip = "off") + geom_hline(yintercept = 83, linetype = "dashed", linewidth = 1) 
+                                   stat("identity"))) +  
+                                    geom_col(color = "black",
+                                              show.legend = FALSE) +  
+                                    ylim(0, 100) + 
+                                    labs(x = "Distance from ChIP-Seq Peak (kbp)",                                                                       y = "% of CC peaks overlapping with ChIP-Seq peak",                                                            title = "Calling Cards and ChIP-Seq Overlap",                                                                 subtitle = "ESR1-HyPB and HyPB sample HF552DSX7 overlap with ESR1 ChIP-Seq \npeaks from sample A90, increasing the distance window from 1kbp to 100kbp") +  
+                                    theme_dark() + 
+                                    coord_cartesian(expand = FALSE, clip = "off") + 
+                                    geom_hline(yintercept = 83, linetype = "dashed", linewidth = 1) 
 
 
 HF5_A90_Incrw_Figure
 
 ```
 
-#Results
+# Results
 
 ## What is this data
 
 Firstly, the data was provided to us as fastq files, but each replicate appears to have four files. For ER replicate one, two are labelled ER1_EKDL230008858-1A_HF552DSX7\* and the other two are ER1_EKDL230008858-1A_HFK3FDSX7\*. Each of these has either of these two suffixes L2_1.fq or L2_2.fq. Through looking at the FastQC data, it appeared that L2_2.fq files had a much more varied sequence at the beginning of each read, where as the vast majority of L2_1.fq had the same beginning sequence, that matched with the appropriate barcode for that condition.
 
-With this info, I determined that the L2_2.fq files were the paired ended read, this can be discarded in bulk CC sequencing and so only the L2_1.fq files were carried forward with the analysis. They were treated as separate files throughout this process as I was unsure why there were two - it has now been pointed out to me, this is likely due to the fact they were run in two different flow cells. As such, they could have been combined. Further analysis will be carried out with these files merged into one.
+With this info, I determined that the L2_2.fq files were the paired ended read, this can be discarded in bulk CC sequencing and so only the L2_1.fq files were carried forward with the analysis. They were treated as separate files throughout this process as I was unsure why there were two - it has now been pointed out to me, this is likely due to the fact they were run in two different flow cells. As such, they could have been combined. Since writing this document, further analysis combining these files and processing them in the same way found there was no improvement to the data, in fact it appears to worsen the result - this will be discussed later.
 
-I found that the number of overlapping reads was slightly better using peaks from [X]\_EKDL230008858-1A_HFK3FDSX7 files than [X]\_EKDL230008858-1A_HF552DSX7. As such, I will only be discussing data from [X]\_EKDL230008858-1A_HFK3FDSX7_L2_1 files in this markdown.
+For the initial analysis, I found that the number of overlapping reads was slightly better using peaks from [X]\_EKDL230008858-1A_HFK3FDSX7 files than [X]\_EKDL230008858-1A_HF552DSX7. As such, I will only be discussing data from [X]\_EKDL230008858-1A_HFK3FDSX7_L2_1 files in this markdown.
 
-The ChIP-Seq data from GSE109820 contained four replicates, A, B, C and D. Each of these replicates had samples collected at 0, 45 and 90 mintues post-treament with E2 (an ER agonist). The 0 time sample was discarded and the difference between 45 min and 90 min samples were tested by looking at replicate A
+The ChIP-Seq data from GSE109820 contained four replicates, A, B, C and D. Each of these replicates had samples collected at 0, 45 and 90 mintues post-treament with E2 (an ER agonist). The 0 time sample was discarded and the difference between 45 min and 90 min samples were tested by looking at replicate A.
 
 ## Calling cards with 1000 bp overlap window with one ChIP-Seq replicate - A45 and A90
 
 ### Figure 1
 
-```{r ER_A45, echo=FALSE}
+```{r ER_A45, echo=FALSE, message=FALSE, warning=FALSE}
 ############# LOOK HERE ######################
 #add or delete the '#' symbol below on install packages
 #install.packages("Rtools")
@@ -1164,7 +1183,7 @@ Percentage_TTAA = (1-(TTAA_overlap/TTAA_total))*100
 #Create table to plot
 A45_Finalpercentage_table = data.frame(Name=c('ESR1-HyPB 1kbp', 'Undirected HyPB 1kbp', 'Genomic TTAA 1kbp'),
                                        Total=rep(c(ESR1_total, HyPB_total, TTAA_total)),
-                                       Overlap_withChIP= c(ESR1_overlap, HyPB_overlap, TTAA_overlap),
+                                       Number_Not_Overlapping_withChIP= c(ESR1_overlap, HyPB_overlap, TTAA_overlap),
                                        PercentageOverlapping= c(Percentage_ESR1, Percentage_HyPB, Percentage_TTAA))
 
 #Then we plot
@@ -1179,7 +1198,7 @@ A45_Figure <- ggplot(data = A45_Finalpercentage_table,
                                                                                                     title = "Calling Cards and ChIP-Seq Overlap",
                                                                                                     subtitle = "Determining percentage of overlapping peaks from ESR1-HyPB and HyPB \nsample HFK3FDSX7 within 1000 bp of ESR1 ChIP-Seq peaks from \nsample A45") +  theme_dark() + coord_cartesian(expand = FALSE, clip = "off") + geom_hline(yintercept = 83, linetype = "dashed", linewidth = 1) 
 
-
+write.csv(A45_Finalpercentage_table, "/mnt/scratch/users/jps558/Stenning_Data_Analysis/stats/HFK3FDSX7_A45.csv", row.names=FALSE)
 A45_Figure
 ########################################################################
 
@@ -1187,7 +1206,7 @@ A45_Figure
 
 ### Figure 2
 
-```{r ER_A90, echo= FALSE}
+```{r ER_A90, echo= FALSE, message=FALSE, warning=FALSE}
 ############# LOOK HERE ######################
 #add or delete the '#' symbol below on install packages
 #install.packages("Rtools")
@@ -1225,7 +1244,7 @@ Percentage_TTAA = (1-(TTAA_overlap/TTAA_total))*100
 #Create table to plot
 A90_Finalpercentage_table = data.frame(Name=c('ESR1-HyPB 1kbp', 'Undirected HyPB 1kbp', 'Genomic TTAA 1kbp'),
                                        Total=rep(c(ESR1_total, HyPB_total, TTAA_total)),
-                                       Overlap_withChIP= c(ESR1_overlap, HyPB_overlap, TTAA_overlap),
+                                       Number_Not_Overlapping_withChIP= c(ESR1_overlap, HyPB_overlap, TTAA_overlap),
                                        PercentageOverlapping= c(Percentage_ESR1, Percentage_HyPB, Percentage_TTAA))
 
 #Then we plot
@@ -1240,7 +1259,7 @@ A90_Figure <- ggplot(data = A90_Finalpercentage_table,
                                                                                                     title = "Calling Cards and ChIP-Seq Overlap",
                                                                                                     subtitle = "Determining percentage of overlapping peaks from ESR1-HyPB and HyPB \nsample HFK3FDSX7 within 1000 bp of ESR1 ChIP-Seq peaks from \nsample A90") +  theme_dark() + coord_cartesian(expand = FALSE, clip = "off") + geom_hline(yintercept = 83, linetype = "dashed", linewidth = 1) 
 
-
+write.csv(A90_Finalpercentage_table, "/mnt/scratch/users/jps558/Stenning_Data_Analysis/stats/HFK3FDSX7_A90.csv", row.names=FALSE)
 A90_Figure
 ########################################################################
 
@@ -1255,7 +1274,7 @@ I found it surprising that so few HyPB-ER peaks overlapped with ChIP-Seq peaks a
 
 ### Figure 3
 
-```{r ER_B90, echo = FALSE}
+```{r ER_B90, echo = FALSE, message=FALSE, warning=FALSE}
 ############# LOOK HERE ######################
 #add or delete the '#' symbol below on install packages
 #install.packages("Rtools")
@@ -1293,7 +1312,7 @@ Percentage_TTAA = (1-(TTAA_overlap/TTAA_total))*100
 #Create table to plot
 B90_Finalpercentage_table = data.frame(Name=c('ESR1-HyPB 1kbp', 'Undirected HyPB 1kbp', 'Genomic TTAA 1kbp'),
                                        Total=rep(c(ESR1_total, HyPB_total, TTAA_total)),
-                                       Overlap_withChIP= c(ESR1_overlap, HyPB_overlap, TTAA_overlap),
+                                       Number_Not_Overlapping_withChIP= c(ESR1_overlap, HyPB_overlap, TTAA_overlap),
                                        PercentageOverlapping= c(Percentage_ESR1, Percentage_HyPB, Percentage_TTAA))
 
 #Then we plot
@@ -1308,7 +1327,7 @@ B90_Figure <- ggplot(data = B90_Finalpercentage_table,
                                                                                                     title = "Calling Cards and ChIP-Seq Overlap",
                                                                                                     subtitle = "Determining percentage of overlapping peaks from ESR1-HyPB and HyPB \nsample HFK3FDSX7 within 1000 bp of ESR1 ChIP-Seq peaks from \nsample B90") +  theme_dark() + coord_cartesian(expand = FALSE, clip = "off") + geom_hline(yintercept = 83, linetype = "dashed", linewidth = 1) 
 
-
+write.csv(B90_Finalpercentage_table, "/mnt/scratch/users/jps558/Stenning_Data_Analysis/stats/HFK3FDSX7_B90.csv", row.names=FALSE)
 B90_Figure
 ########################################################################
 
@@ -1316,7 +1335,7 @@ B90_Figure
 
 ### Figure 4
 
-```{r ER_C90, echo=FALSE}
+```{r ER_C90, echo=FALSE, message=FALSE, warning=FALSE}
 ############# LOOK HERE ######################
 #add or delete the '#' symbol below on install packages
 #install.packages("Rtools")
@@ -1355,7 +1374,7 @@ Percentage_TTAA = (1-(TTAA_overlap/TTAA_total))*100
 #Create table to plot
 C90_Finalpercentage_table = data.frame(Name=c('ESR1-HyPB 1kbp', 'Undirected HyPB 1kbp', 'Genomic TTAA 1kbp'),
                                        Total=rep(c(ESR1_total, HyPB_total, TTAA_total)),
-                                       Overlap_withChIP= c(ESR1_overlap, HyPB_overlap, TTAA_overlap),
+                                       Number_Not_Overlapping_withChIP= c(ESR1_overlap, HyPB_overlap, TTAA_overlap),
                                        PercentageOverlapping= c(Percentage_ESR1, Percentage_HyPB, Percentage_TTAA))
 
 #Then we plot
@@ -1370,7 +1389,7 @@ C90_Figure <- ggplot(data = C90_Finalpercentage_table,
                                                                                                     title = "Calling Cards and ChIP-Seq Overlap",
                                                                                                     subtitle = "Determining percentage of overlapping peaks from ESR1-HyPB and HyPB \nsample HFK3FDSX7 within 1000 bp of ESR1 ChIP-Seq peaks from \nsample C90") +  theme_dark() + coord_cartesian(expand = FALSE, clip = "off") + geom_hline(yintercept = 83, linetype = "dashed", linewidth = 1) 
 
-
+write.csv(C90_Finalpercentage_table, "/mnt/scratch/users/jps558/Stenning_Data_Analysis/stats/HFK3FDSX7_C90.csv", row.names=FALSE)
 C90_Figure
 ########################################################################
 
@@ -1379,7 +1398,7 @@ C90_Figure
 
 ### Figure 5
 
-```{r ER_D90, echo= FALSE}
+```{r ER_D90, echo= FALSE, message=FALSE, warning=FALSE}
 ############# LOOK HERE ######################
 #add or delete the '#' symbol below on install packages
 #install.packages("Rtools")
@@ -1417,7 +1436,7 @@ Percentage_TTAA = (1-(TTAA_overlap/TTAA_total))*100
 #Create table to plot
 D90_Finalpercentage_table = data.frame(Name=c('ESR1-HyPB 1kbp', 'Undirected HyPB 1kbp', 'Genomic TTAA 1kbp'),
                                        Total=rep(c(ESR1_total, HyPB_total, TTAA_total)),
-                                       Overlap_withChIP= c(ESR1_overlap, HyPB_overlap, TTAA_overlap),
+                                       Number_Not_Overlapping_withChIP= c(ESR1_overlap, HyPB_overlap, TTAA_overlap),
                                        PercentageOverlapping= c(Percentage_ESR1, Percentage_HyPB, Percentage_TTAA))
 
 #Then we plot
@@ -1432,7 +1451,7 @@ D90_Figure <- ggplot(data = D90_Finalpercentage_table,
                                                                                                     title = "Calling Cards and ChIP-Seq Overlap",
                                                                                                     subtitle = "Determining percentage of overlapping peaks from ESR1-HyPB and HyPB \nsample HFK3FDSX7 within 1000 bp of ESR1 ChIP-Seq peaks from \nsample D90") +  theme_dark() + coord_cartesian(expand = FALSE, clip = "off") + geom_hline(yintercept = 83, linetype = "dashed", linewidth = 1) 
 
-
+write.csv(D90_Finalpercentage_table, "/mnt/scratch/users/jps558/Stenning_Data_Analysis/stats/HFK3FDSX7_D90.csv", row.names=FALSE)
 D90_Figure
 ########################################################################
 
@@ -1449,7 +1468,7 @@ ChIP-Seq samples A90 and C90 were used as they represent the samples with the mo
 
 ### Figure 6
 
-```{r ER Increasing window A90, echo= FALSE}
+```{r ER Increasing window A90, echo= FALSE, message=FALSE, warning=FALSE}
 #Load software
 library(ggplot2)
 library(ggthemes)
@@ -1627,7 +1646,7 @@ HF5_A90_Incrw_Finalpercentage_table = data.frame(Name=graphorder,
                                                              HyPB_total,
                                                              HyPB_total, 
                                                              HyPB_total)),
-                                                 Overlap_withChIP= c(ESR1_HF5_overlap_1000bp,
+                                                 Number_Not_Overlapping_withChIP= c(ESR1_HF5_overlap_1000bp,
                                                                      ESR1_HF5_overlap_5000bp,
                                                                      ESR1_HF5_overlap_10000bp,
                                                                      ESR1_HF5_overlap_20000bp,
@@ -1700,7 +1719,7 @@ HF5_A90_Incrw_Figure <- ggplot(data = HF5_A90_Incrw_Finalpercentage_table,
                                                                                                               title = "Calling Cards and ChIP-Seq Overlap",
                                                                                                               subtitle = "ESR1-HyPB and HyPB sample HFK3FDSX7 overlap with ESR1 ChIP-Seq \npeaks from sample A90, increasing the distance window from 1kbp to 100kbp") +  theme_dark() + coord_cartesian(expand = FALSE, clip = "off") + geom_hline(yintercept = 83, linetype = "dashed", linewidth = 1) 
 
-
+write.csv(HF5_A90_Incrw_Finalpercentage_table, "/mnt/scratch/users/jps558/Stenning_Data_Analysis/stats/A90_increasingwindow.csv", row.names=FALSE)
 HF5_A90_Incrw_Figure
 ########################################################################
 
@@ -1708,7 +1727,7 @@ HF5_A90_Incrw_Figure
 
 ### Figure 7
 
-```{r ER increasing window C90, echo= FALSE}
+```{r ER increasing window C90, echo= FALSE, message=FALSE, warning=FALSE}
 #Load software
 library(ggplot2)
 library(ggthemes)
@@ -1886,7 +1905,7 @@ HF5_C90_Incrw_Finalpercentage_table = data.frame(Name=graphorder,
                                                              HyPB_total,
                                                              HyPB_total, 
                                                              HyPB_total)),
-                                                 Overlap_withChIP= c(ESR1_HF5_overlap_1000bp,
+                                                 Number_Not_Overlapping_withChIP= c(ESR1_HF5_overlap_1000bp,
                                                                      ESR1_HF5_overlap_5000bp,
                                                                      ESR1_HF5_overlap_10000bp,
                                                                      ESR1_HF5_overlap_20000bp,
@@ -1959,7 +1978,7 @@ HF5_C90_Incrw_Figure <- ggplot(data = HF5_C90_Incrw_Finalpercentage_table,
                                                                                                               title = "Calling Cards and ChIP-Seq Overlap",
                                                                                                               subtitle = "ESR1-HyPB and HyPB sample HFK3FDSX7 overlap with ESR1 ChIP-Seq \npeaks from sample C90, increasing the distance window from 1kbp to 100kbp") +  theme_dark() + coord_cartesian(expand = FALSE, clip = "off") + geom_hline(yintercept = 83, linetype = "dashed", linewidth = 1) 
 
-
+write.csv(HF5_C90_Incrw_Finalpercentage_table, "/mnt/scratch/users/jps558/Stenning_Data_Analysis/stats/C90_increasingwindow.csv", row.names=FALSE)
 HF5_C90_Incrw_Figure
 ########################################################################
 
@@ -1967,14 +1986,189 @@ HF5_C90_Incrw_Figure
 
 Although these plots show a trend up to saturation, neither of them make it to 83% - the percentage found in Wang et al., 2012. This is concerning and I'm not sure what is causing both the lack over ESR1 directed CC overlap with ChIP-Seq and why the undirected calling cards are overlapping more than the directed.
 
+## Supplimentary analysis after writing this document
+
+Since gathering this evidence to send to you, I combined the data across the two flow cells for both samples to increase the statistical power of the data and used the '-r' refine flag in the peak calling script to try and improve the number of overlapping peaks. 
+
+### Figure 8
+
+```{r combined flow cell, echo= FALSE, message=FALSE, warning=FALSE}
+############# LOOK HERE ######################
+#add or delete the '#' symbol below on install packages
+#install.packages("Rtools")
+#install.packages("ggthemes")
+
+#Load software
+library(ggplot2)
+library(ggthemes)
+
+#Set working directory
+#setwd("//userfs/jps558/w2k/Desktop/Local Calling Cards Analysis/Data/JPS/20231117RmdOutputs") 
+
+
+#Set column names
+col_names = c("Chromosome", "Position Start", "Position End", "Number of Overlaps with ChIP-Seq Peaks")
+Genocol_names = c("Chromosome", "Position Start", "Position End", 'Name', 'Score', 'Strand',"Number of Overlaps with ChIP-Seq Peaks")
+
+##Read data
+#Variables named <Window '-a'><Window'-b'>
+ESR1_EK_HyPB_A90 = read.table("202306_JS_BulkCC/outputs/window/results/1kbp_A_ER_HyPB_EKDL230008858_fdr_bh_0.05_peaks_r.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+Undir_EK_HyPB_A90 = read.table("202306_JS_BulkCC/outputs/window/results/1kbp_A_WT_HyPB_EKDL230008858_p9_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+TTAA_A90 = read.table("202306_JS_BulkCC/outputs/window/results/1kbp_A_hg38_TTAA.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = Genocol_names)
+
+ESR1_HF5_HyPB_A90 = read.table("202306_JS_BulkCC/outputs/window/results/1kbp_A_ER_HyPB_HF552DSX7_L2_1_fdr_bh_0.05_peaks_r.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+Undir_HF5_HyPB_A90 = read.table("202306_JS_BulkCC/outputs/window/results/1kbp_A_WT_HyPB_HF552DSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+
+ESR1_HF3_HyPB_A90 = read.table("202306_JS_BulkCC/outputs/window/results/1kbp_A_ER_HyPB_HFK3FDSX7_L2_1_fdr_bh_0.05_peaks_r.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+Undir_HF3_HyPB_A90 = read.table("202306_JS_BulkCC/outputs/window/results/1kbp_A_WT_HyPB_HFK3FDSX7_L2_1_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+
+#Counting the total reads
+ESR1_EK_total=nrow(ESR1_EK_HyPB_A90)
+HyPB_EK_total=nrow(Undir_EK_HyPB_A90)
+TTAA_total=nrow(TTAA_A90)
+
+ESR1_HF5_total=nrow(ESR1_HF5_HyPB_A90)
+HyPB_HF5_total=nrow(Undir_HF5_HyPB_A90)
+
+ESR1_HF3_total=nrow(ESR1_HF3_HyPB_A90)
+HyPB_HF3_total=nrow(Undir_HF3_HyPB_A90)
+#Count the number of reads with no overlap
+ESR1_EK_overlap = as.numeric(length(which(ESR1_EK_HyPB_A90$Number.of.Overlaps.with.ChIP.Seq.Peaks==0)))
+HyPB_EK_overlap = as.numeric(length(which(Undir_EK_HyPB_A90$Number.of.Overlaps.with.ChIP.Seq.Peaks==0)))
+TTAA_overlap = as.numeric(length(which(TTAA_A90$Number.of.Overlaps.with.ChIP.Seq.Peaks==0)))
+
+ESR1_HF5_overlap = as.numeric(length(which(ESR1_HF5_HyPB_A90$Number.of.Overlaps.with.ChIP.Seq.Peaks==0)))
+HyPB_HF5_overlap = as.numeric(length(which(Undir_HF5_HyPB_A90$Number.of.Overlaps.with.ChIP.Seq.Peaks==0)))
+
+ESR1_HF3_overlap = as.numeric(length(which(ESR1_HF3_HyPB_A90$Number.of.Overlaps.with.ChIP.Seq.Peaks==0)))
+HyPB_HF3_overlap = as.numeric(length(which(Undir_HF3_HyPB_A90$Number.of.Overlaps.with.ChIP.Seq.Peaks==0)))
+#Determine overlap percentage
+Percentage_ESR1_EK = (1-(ESR1_EK_overlap/ESR1_EK_total))*100
+Percentage_HyPB_EK = (1-(HyPB_EK_overlap/HyPB_EK_total))*100
+Percentage_TTAA = (1-(TTAA_overlap/TTAA_total))*100
+
+Percentage_ESR1_HF5 = (1-(ESR1_HF5_overlap/ESR1_HF5_total))*100
+Percentage_HyPB_HF5 = (1-(HyPB_HF5_overlap/HyPB_HF5_total))*100
+
+Percentage_ESR1_HF3 = (1-(ESR1_HF3_overlap/ESR1_HF3_total))*100
+Percentage_HyPB_HF3 = (1-(HyPB_HF3_overlap/HyPB_HF3_total))*100
+#Create table to plot
+A90_Finalpercentage_table = data.frame(Name=c('ER_EK', 'HyPB_EK', 'TTAA_1', 'ER_HF5', 'HyPB_HF5', 'TTAA_2', 'ER_HF3', 'HyPB_HF3', 'TTAA_3'),
+                                       Total=rep(c(ESR1_EK_total, HyPB_EK_total, TTAA_total, ESR1_HF5_total, HyPB_HF5_total, TTAA_total, ESR1_HF3_total, HyPB_HF3_total, TTAA_total)),
+                                       Number_Not_Overlapping_withChIP= c(ESR1_EK_overlap, HyPB_EK_overlap, TTAA_overlap, ESR1_HF5_overlap, HyPB_HF5_overlap, TTAA_overlap, ESR1_HF3_overlap, HyPB_HF3_overlap, TTAA_overlap),
+                                       PercentageOverlapping= c(Percentage_ESR1_EK, Percentage_HyPB_EK, Percentage_TTAA, Percentage_ESR1_HF5, Percentage_HyPB_HF5, Percentage_TTAA, Percentage_ESR1_HF3, Percentage_HyPB_HF3, Percentage_TTAA))
+
+#Then we plot
+graphorder= c('ER_EK', 'HyPB_EK', 'TTAA_1', 'ER_HF5', 'HyPB_HF5', 'TTAA_2', 'ER_HF3', 'HyPB_HF3', 'TTAA_3')
+A90_Figure <- ggplot(data = A90_Finalpercentage_table, 
+                     aes(x= factor(Name, graphorder), 
+                         y = PercentageOverlapping,
+                         fill = Name, 
+                         stat("identity"))) +  geom_col(color = "black",
+                                                        show.legend = FALSE) +  ylim(0, 100) + labs(x = "Name and Distance from ChIP-Seq Peak", 
+                                                                                                    y = "% of CC peaks overlapping with ChIP-Seq peak",
+                                                                                                    title = "Calling Cards and ChIP-Seq Overlap",
+                                                                                                    subtitle = "Determining percentage of overlapping peaks from ESR1-HyPB and HyPB \n combined flow cell within 1000 bp of ESR1 ChIP-Seq peaks from sample A90") +  theme_dark() + coord_cartesian(expand = FALSE, clip = "off") + geom_hline(yintercept = 83, linetype = "dashed") 
+
+write.csv(A90_Finalpercentage_table, "/mnt/scratch/users/jps558/Stenning_Data_Analysis/stats/Comparing ESR1 combined flow cell r and nor.csv", row.names=FALSE)
+A90_Figure
+########################################################################
+
+```
+
+Unfortunately, this didn't only fail to improve the number of overlapping peaks, but it actually reduces the number of overlapping peaks. 
+
+I couldn't understand how this was possible until I noticed something odd in the intermediate files generated by the BBPeakCaller_TF.py custom script on Arnhav's GitHub - https://github.com/arnavm/calling_cards. 
+
+When the entries in the file are sorted by 'corrected_pValue' smallest to largest, it appears that any peak with a corrected Pvalue lower than 0.05 has been rejected. I would have expected the opposite to be true, and visualizing the peak with the lowest corrected Pvalue shows a region next to a commonly upregulated gene in breast cancer with sharp ESR1 CC peaks and almost no undirected insertion. 
+
+Given this is what I expected to be generated from the peak calling script as a top peak, I am confused as to why this peak has been rejected. To investigate, I took all of the rejected peaks from the ESR1 intermediate file and peaks with similar Pvalues in the undirected calling cards (as the correction is not carried out by the BRD4 script) and determined their overlap with ChIP-Seq peaks.
+
+### Figure 9
+```{r rejectvsaccept, echo= FALSE, message=FALSE, warning=FALSE}
+############# LOOK HERE ######################
+#add or delete the '#' symbol below on install packages
+#install.packages("Rtools")
+#install.packages("ggthemes")
+
+#Load software
+library(ggplot2)
+library(ggthemes)
+
+
+#Set column names
+col_names = c("Chromosome", "Position Start", "Position End", "Number of Overlaps with ChIP-Seq Peaks")
+Genocol_names = c("Chromosome", "Position Start", "Position End", 'Name', 'Score', 'Strand',"Number of Overlaps with ChIP-Seq Peaks")
+
+##Read data
+#Variables named <Window '-a'><Window'-b'>
+ESR1_EK_HyPB_A90 = read.table("202306_JS_BulkCC/outputs/window/results/1kbp_A_ER_HyPB_EKDL230008858_rejected_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+Undir_EK_HyPB_A90 = read.table("202306_JS_BulkCC/outputs/window/results/1kbp_A_WT_HyPB_EKDL230008858_rejected_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+
+ESR1_accept_HyPB_A90 = read.table("202306_JS_BulkCC/outputs/window/results/accepted/1kbp_A_ER_HyPB_EKDL230008858_fdr_bh_0.05_peaks_r.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+Undir_Accept_HyPB_A90 = read.table("202306_JS_BulkCC/outputs/window/results/accepted/1kbp_A_WT_HyPB_EKDL230008858_p30_peaks.bed_B_GSM2970404_A90_peaks.bed", header = TRUE, sep = "\t", col.names = col_names)
+
+#Counting the total reads
+ESR1_A90_total=nrow(ESR1_EK_HyPB_A90)
+HyPB_A90_total=nrow(Undir_EK_HyPB_A90)
+
+
+ESR1_accept_total=nrow(ESR1_accept_HyPB_A90)
+HyPB_accept_total=nrow(Undir_Accept_HyPB_A90)
+
+
+#Count the number of reads with no overlap
+ESR1_A90_overlap = as.numeric(length(which(ESR1_EK_HyPB_A90$Number.of.Overlaps.with.ChIP.Seq.Peaks==0)))
+HyPB_A90_overlap = as.numeric(length(which(Undir_EK_HyPB_A90$Number.of.Overlaps.with.ChIP.Seq.Peaks==0)))
+
+ESR1_accept_overlap = as.numeric(length(which(ESR1_accept_HyPB_A90$Number.of.Overlaps.with.ChIP.Seq.Peaks==0)))
+HyPB_accept_overlap = as.numeric(length(which(Undir_Accept_HyPB_A90$Number.of.Overlaps.with.ChIP.Seq.Peaks==0)))
+
+#Determine overlap percentage
+Percentage_ESR1_A90 = (1-(ESR1_A90_overlap/ESR1_A90_total))*100
+Percentage_HyPB_A90 = (1-(HyPB_A90_overlap/HyPB_A90_total))*100
+
+Percentage_ESR1_accept = (1-(ESR1_accept_overlap/ESR1_accept_total))*100
+Percentage_HyPB_accept = (1-(HyPB_accept_overlap/HyPB_accept_total))*100
+
+
+#Create table to plot
+RejectVsAccept_Finalpercentage_table = data.frame(Name=c('ER_Reject', 'ER_Accept', 'HyPB_Reject','HyPB_Accept'),
+                                       Total=rep(c(ESR1_A90_total, ESR1_accept_total, HyPB_A90_total, HyPB_accept_total)),
+                                       Number_Not_Overlapping_withChIP= c(ESR1_A90_overlap, ESR1_accept_overlap, HyPB_A90_overlap, HyPB_accept_overlap),
+                                       PercentageOverlapping= c(Percentage_ESR1_A90, Percentage_ESR1_accept, Percentage_HyPB_A90, Percentage_HyPB_accept))
+
+#Then we plot
+graphorder= c('ER_Reject', 'ER_Accept', 'HyPB_Reject','HyPB_Accept')
+A90_Figure <- ggplot(data = RejectVsAccept_Finalpercentage_table, 
+                     aes(x= factor(Name, graphorder), 
+                         y = PercentageOverlapping,
+                         fill = Name, 
+                         stat("identity"))) +  geom_col(color = "black",
+                                                        show.legend = FALSE) +  ylim(0, 100) + labs(x = "Name and Distance from ChIP-Seq Peak", 
+                                                                                                    y = "% of CC peaks overlapping with ChIP-Seq peak",
+                                                                                                    title = "Calling Cards and ChIP-Seq Overlap",
+                                                                                                    subtitle = "Determining percentage of overlap from ESR1-HyPB and HyPB \n accepted and rejected peaks within 1000 bp of ESR1 ChIP-Seq peaks from sample A90") +  theme_dark() + coord_cartesian(expand = FALSE, clip = "off") + geom_hline(yintercept = 83, linetype = "dashed") 
+
+
+A90_Figure
+write.csv(RejectVsAccept_Finalpercentage_table, "/mnt/scratch/users/jps558/Stenning_Data_Analysis/stats/Comparing ESR1 rejected peaks to non-rejected.csv", row.names=FALSE)
+########################################################################
+```
+
+This doesn't fix my data, but it does bring it more in line with what I was expecting, more ESR1 CC overlap with ChIP-seq than undirected. 
+
+There are additional steps carried out by the BBPeakCaller_TF.py script that I have not captured by analyzing the data this way. I know this because there were ~20,000 lines that were not rejected, however only ~5,000 of these were written into the peak file. 
+
 # Discussion
 
-I have a hypothesis that this apparent lack of overlap is actually being caused by the Bayesian block method of analysis. The undirected HyPB has an affinity for BRD4, shown by their co-immunoprecipitation, which means that it will be inserting SRTs into enhancer and super enhancer sites. ESR1 is thought to act as a mediator of enchancer and promoter interaction, meaning that both ESR1 and BRD4 could be co-occupying the same sites. This could be having an effect where the undirected insertions are clustered in very similar places to directed insertions, so that when the Baysean block are made, the peak calling program might not be able to correctly identify the difference between background and genuine signal - effectively masking or diminishing the signal.
+I had originally come up with the hypothesis that this apparent lack of overlap could be caused by the Bayesian block method of analysis. The undirected HyPB has an affinity for BRD4, shown by their co-immunoprecipitation, which means that it will be inserting SRTs into enhancer and super enhancer sites. ESR1 is thought to act as a mediator of enchancer and promoter interaction, meaning that both ESR1 and BRD4 could be co-occupying the same sites. This could be having an effect where the undirected insertions are clustered in very similar places to directed insertions, so that when the Baysean block are made, the peak calling program might not be able to correctly identify the difference between background and genuine signal - effectively masking or diminishing the signal. I believe this is supported by the fact that gene ontology shows that alot of the most represented genes in ER directed and undirected calling cards are the same.
 
-I believe this is supported by the fact that gene ontology shows that alot of the most represented genes in ER directed and undirected calling cards are the same.
+While this hypothesis could still be correct - with the additional information regarding the rejected peaks appearing to have the lowest Pvalues - there appears to be more to the problem than BRD4-ESR1 co-localisation confounding peak calling. 
+
+Could you please help me to understand why it appears that loci with strong ESR1 CC integration and almost no WT-HyPB CC integration have been rejected by your script? 
+
 
 # Future directions
 
-I will re-analyse this data, ensuring no mistakes have been made in the processing. I will also combine the two ER flow cell files as well as the ChIP-Seq replicates for increased statistical power.
-
-Another suggestion made by Andy was to subtract a BRD4 ChIP-Seq bed file from my ER ChIP-Seq. This should, in theory, remove all of the enhancer sites that would be bound in these cells and if used to run the bedtools window analysis, it could be used to give an indication whether my hypothesis is correct. It could then be tested by trying to find alternative analysis methods.
+To see if BRD4 co-localisation is confounding peak calling, Andy has suggested to subtract a BRD4 ChIP-Seq bed file from my ER ChIP-Seq. This should, in theory, remove all of the enhancer sites that would be bound in these cells and if used to run the bedtools window analysis, it could be used to give an indication whether my hypothesis is correct. It could then be tested by trying to find alternative analysis methods.
