@@ -519,7 +519,7 @@ GenoTTAA <- read.table("Data/20230925WindowOutputs/TTAA_win_SP1ChIP/ENCODE/1kb_W
 #Once in the dataframe, we can count how many reads are in each file by the number of lines in each dataframe
 SP1_HyPB_M_TotalPeaks = nrow(SP1_HyPB_M_1kbp_narrow)
 HyPB_M_TotalPeaks = nrow(SP1_HyPB_M_1kbp_narrow)
-TTAAtotal = nrow(SP1_HyPB_1kbp_narrow)
+TTAAtotal = nrow(GenoTTAA)
 #Then we count the number of reads with no overlap - this is denoted by a '0' in the overlap column
 
 SP1_HyPB_M_1kbp_a_peaks_b_overlap <- as.numeric(length(which(SP1_HyPB_M_1kbp_narrow$Number.of.Overlaps.with.ChIP.Seq.Peaks==0)))
@@ -538,8 +538,9 @@ Final_Percentage_table <- data.frame(Name=c('SP1-HyPB 1kbp', 'Undirected HyPB 1k
                                      PercentageOverlapping= c(Percent_SP1_HyPB_1kbp_M, Percent_HyPB_1kbp_M, Percent_TTAA_1kbp))
 
 #Finally, we can now plot
+graphorder= c('SP1-HyPB 1kbp', 'Undirected HyPB 1kbp', 'Genomic TTAA 1kbp')
 Figure <- ggplot(data = Final_Percentage_table, 
-                 aes(x= reorder(Name, -PercentageOverlapping), 
+                 aes(x= factor(Name, graphorder), 
                      y = PercentageOverlapping,
                      fill = Name)) +  geom_col(color = "black",
                                                show.legend = FALSE) +  ylim(0, 100) + labs(x = "Name and Distance from ChIP-Seq Peak", 
@@ -586,7 +587,7 @@ TTAAtotal_MM = nrow(GenoTTAA_MM)
 
 SP1_HyPB_M_1kbp_a_peaks_b_overlap <- as.numeric(length(which(SP1_HyPB_MM_1kbp_narrow$Number.of.Overlaps.with.ChIP.Seq.Peaks==0)))
 HyPB_MM_1kbp_a_peaks_b_overlap <- as.numeric(length(which(HyPB_1kbp_MM_narrow$Number.of.Overlaps.with.ChIP.Seq.Peaks==0)))
-TTAA_MM_1kbp_a_peaks_b_overlap <- as.numeric(length(which(GenoTTAA$Number.of.Overlaps.with.ChIP.Seq.Peaks==0)))
+TTAA_MM_1kbp_a_peaks_b_overlap <- as.numeric(length(which(GenoTTAA_MM$Number.of.Overlaps.with.ChIP.Seq.Peaks==0)))
 
 #Then we can work out percentage of overlapped reads from the number of non-overlapped reads
 Percent_SP1_HyPB_1kbp_MM <- (1-(SP1_HyPB_M_1kbp_a_peaks_b_overlap/SP1_HyPB_MM_TotalPeaks))*100
@@ -600,8 +601,9 @@ Final_Percentage_table <- data.frame(Name=c('SP1-HyPB 1kbp', 'Undirected HyPB 1k
                                      PercentageOverlapping= c(Percent_SP1_HyPB_1kbp_MM, Percent_HyPB_1kbp_MM, Percent_TTAA_1kbp_MM))
 
 #Finally, we can now plot
+graphorder= c('SP1-HyPB 1kbp', 'Undirected HyPB 1kbp', 'Genomic TTAA 1kbp')
 Figure <- ggplot(data = Final_Percentage_table, 
-                 aes(x= reorder(Name, -PercentageOverlapping), 
+                 aes(x= factor(Name, graphorder), 
                      y = PercentageOverlapping,
                      fill = Name)) +  geom_col(color = "black",
                                                show.legend = FALSE) +  ylim(0, 100) + labs(x = "Name and Distance from ChIP-Seq Peak", 
